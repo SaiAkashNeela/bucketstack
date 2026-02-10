@@ -1,0 +1,39 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.build/
+pnpm-debug.log*
+lerna-debug.log*
+notarization-log.json
+node_modules
+dist
+dist-ssr
+*.local
+.vite/
+.vite
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+
+# Tauri
+target
+
+# Security & Secrets
+.env
+.env.*
+*.p12
+*.p8
+*.cer
+*.pem
+*.key

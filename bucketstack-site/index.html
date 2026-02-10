@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BucketStack - Native S3 File Manager for macOS, Windows & Linux</title>
+  <meta name="description"
+    content="BucketStack is a native S3 file manager built with Rust. Manage your S3 buckets like a pro with an intuitive interface. Free, open-source, and available for macOS, Windows, and Linux." />
+  <meta name="keywords"
+    content="S3, file manager, AWS, cloud storage, Rust, native app, desktop application, macOS, Windows, Linux, bucket management" />
+  <meta name="author" content="BucketStack" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.bucketstack.app/" />
+  <meta property="og:title" content="BucketStack - Native S3 File Manager" />
+  <meta property="og:description"
+    content="Manage your S3 buckets like a pro. Free, open-source desktop app for macOS, Windows & Linux." />
+  <meta property="og:image" content="https://www.bucketstack.app/logo.png" />
+  <meta property="og:site_name" content="BucketStack" />
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://www.bucketstack.app/" />
+  <meta property="twitter:title" content="BucketStack - Native S3 File Manager" />
+  <meta property="twitter:description" content="Manage your S3 buckets like a pro. Free, open-source desktop app." />
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://www.bucketstack.app/" />
+
+  <!-- Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "BucketStack",
+      "description": "Native S3 file manager built with Rust for macOS, Windows, and Linux",
+      "url": "https://www.bucketstack.app",
+      "applicationCategory": "UtilityApplication",
+      "operatingSystem": ["macOS", "Windows", "Linux"],
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "BucketStack",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "Customer Service",
+          "email": "akash@bucketstack.app"
+        }
+      }
+    }
+    </script>
+  <script>
+    // Removed CDN Tailwind
+  </script>
+  <!-- Analytics -->
+  <script src="https://analytics.geeksdesigns.com/api/script.js" data-site-id="2" defer></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Geist:wght@100;200;300;400;500;600;700;800;900&family=Geist+Mono:wght@100;200;300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8fafc;
+      --bg-tertiary: #f1f5f9;
+      --bg-subtle: #f8fafc;
+      --bg-selected: #eff6ff;
+
+      --border-primary: #e2e8f0;
+      --border-secondary: #cbd5e1;
+      --border-selected: #bfdbfe;
+
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-tertiary: #64748b;
+      --text-on-accent: #ffffff;
+
+      --accent-blue: #3b82f6;
+      --accent-blue-hover: #2563eb;
+
+      --icon-color: #64748b;
+      --icon-color-accent: #3b82f6;
+
+      --text-danger: #dc2626;
+      --bg-danger-subtle: #fee2e2;
+      --bg-danger-hover: #fecaca;
+
+      --text-success: #16a34a;
+      --bg-success-subtle: #dcfce7;
+
+      --bg-warning-subtle: #fffbeb;
+      --border-warning: #fde68a;
+      --text-warning-heading: #b45309;
+      --text-warning-body: #ca8a04;
+
+      --input-bg: #ffffff;
+      --input-border: #cbd5e1;
+      --input-focus-ring: rgba(59, 130, 246, 0.2);
+    }
+
+    .dark {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --bg-subtle: #334155;
+      --bg-selected: #1e40af;
+
+      --border-primary: #334155;
+      --border-secondary: #475569;
+      --border-selected: #1d4ed8;
+
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-tertiary: #94a3b8;
+      --text-on-accent: #ffffff;
+
+      --accent-blue: #60a5fa;
+      --accent-blue-hover: #3b82f6;
+
+      --icon-color: #94a3b8;
+      --icon-color-accent: #60a5fa;
+
+      --text-danger: #f87171;
+      --bg-danger-subtle: #450a0a;
+      --bg-danger-hover: #572424;
+
+      --text-success: #4ade80;
+      --bg-success-subtle: #166534;
+
+      --bg-warning-subtle: #422006;
+      --border-warning: #78350f;
+      --text-warning-heading: #fde047;
+      --text-warning-body: #facc15;
+
+      --input-bg: #1e293b;
+      --input-border: #475569;
+      --input-focus-ring: rgba(96, 165, 250, 0.2);
+    }
+
+    * {
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* macOS-style scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-secondary);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-tertiary);
+    }
+
+    /* macOS-style selection */
+    ::selection {
+      background: rgba(59, 130, 246, 0.2);
+    }
+
+    /* Animation classes */
+    .fade-in {
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .slide-in {
+      animation: slideIn 0.15s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>

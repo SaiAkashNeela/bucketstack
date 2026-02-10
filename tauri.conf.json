@@ -1,0 +1,72 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "productName": "BucketStack",
+  "version": "0.0.1",
+  "identifier": "com.bucketstack.desktop",
+  "build": {
+    "beforeDevCommand": "bun run dev",
+    "beforeBuildCommand": "bun run build",
+    "frontendDist": "./dist",
+    "devUrl": "http://localhost:3000"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "BucketStack",
+        "label": "main",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "visible": true,
+        "center": true,
+        "decorations": true,
+        "transparent": false
+      },
+      {
+        "title": "BucketStack Tray",
+        "label": "tray",
+        "width": 320,
+        "height": 450,
+        "visible": false,
+        "decorations": false,
+        "resizable": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; frame-src 'self' blob:; font-src 'self' data:; connect-src 'self' https:"
+    },
+    "macOSPrivateApi": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": true,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/512x512.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "macOS": {
+      "frameworks": [],
+      "minimumSystemVersion": "",
+      "exceptionDomain": "",
+      "entitlements": "entitlements.plist"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IERCRTc0RkEzRkRCRUQwQUQKUldTdDBMNzlvMC9uMno2WnVvNmRPVVVJYnNvWGFFNVVLU0Ixai9oclU1RVJuOGtKNnkreVoxeU4K",
+      "endpoints": [
+        "https://github.com/SaiAkashNeela/bucketstack/releases/latest/download/latest.json"
+      ]
+    }
+  }
+}

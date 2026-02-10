@@ -1,0 +1,184 @@
+name: Release Build (Windows & Linux)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (e.g., v0.1.0)'
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: '1.1.8'
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install dependencies
+        run: bun install
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ inputs.tag || github.ref_name }}
+          releaseName: 'BucketStack ${{ inputs.tag || github.ref_name }}'
+          releaseBody: 'See assets for all platform builds'
+          releaseDraft: true
+          prerelease: false
+          projectPath: ./
+          args: ''
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: '1.1.8'
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libfuse2
+
+      - name: Install dependencies
+        run: bun install
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ inputs.tag || github.ref_name }}
+          releaseName: 'BucketStack ${{ inputs.tag || github.ref_name }}'
+          releaseBody: 'See assets for all platform builds'
+          releaseDraft: true
+          prerelease: false
+          projectPath: ./
+          args: ''
+
+  generate-manifest:
+    runs-on: ubuntu-latest
+    needs: [build-windows, build-linux]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate and upload manifest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=${{ inputs.tag || github.ref_name }}
+          REPO=${{ github.repository }}
+          VERSION=${TAG#v}
+
+          # Get release info
+          RELEASE=$(gh release view "$TAG" --json body,publishedAt,assets)
+          NOTES=$(echo "$RELEASE" | jq -r '.body')
+          PUB_DATE=$(echo "$RELEASE" | jq -r '.publishedAt')
+
+          # Initialize manifest
+          MANIFEST=$(cat <<EOF
+          {
+            "version": "$VERSION",
+            "notes": "Release $VERSION",
+            "pub_date": "$PUB_DATE",
+            "platforms": {}
+          }
+          EOF
+          )
+
+          # Extract asset filenames and build platform entries
+          ASSETS=$(echo "$RELEASE" | jq -r '.assets[].name')
+
+          # macOS (manually uploaded after notarization)
+          MACOS_TAR=$(echo "$ASSETS" | grep -E 'BucketStack_.*_(aarch64|x64)\.tar\.gz$' | grep -v '\.sig$' | head -1 || true)
+          if [ ! -z "$MACOS_TAR" ]; then
+            MACOS_SIG="$MACOS_TAR.sig"
+            # Detect arch from filename
+            if echo "$MACOS_TAR" | grep -q "aarch64"; then
+              MANIFEST=$(echo "$MANIFEST" | jq ".platforms[\"darwin-aarch64\"] = {\"signature\": \"https://github.com/$REPO/releases/download/$TAG/$MACOS_SIG\", \"url\": \"https://github.com/$REPO/releases/download/$TAG/$MACOS_TAR\"}")
+            else
+              MANIFEST=$(echo "$MANIFEST" | jq ".platforms[\"darwin-x86_64\"] = {\"signature\": \"https://github.com/$REPO/releases/download/$TAG/$MACOS_SIG\", \"url\": \"https://github.com/$REPO/releases/download/$TAG/$MACOS_TAR\"}")
+            fi
+          fi
+
+          # Windows
+          WINDOWS_MSI=$(echo "$ASSETS" | grep -E '.*x64.*\.msi$' | head -1 || true)
+          if [ ! -z "$WINDOWS_MSI" ]; then
+            MANIFEST=$(echo "$MANIFEST" | jq ".platforms[\"windows-x86_64\"] = {\"url\": \"https://github.com/$REPO/releases/download/$TAG/$WINDOWS_MSI\"}")
+          fi
+
+          # Linux
+          LINUX_TAR=$(echo "$ASSETS" | grep -E '.*x86_64.*linux.*\.tar\.gz$' | grep -v '\.sig$' | head -1 || true)
+          if [ ! -z "$LINUX_TAR" ]; then
+            LINUX_SIG="$LINUX_TAR.sig"
+            MANIFEST=$(echo "$MANIFEST" | jq ".platforms[\"linux-x86_64\"] = {\"signature\": \"https://github.com/$REPO/releases/download/$TAG/$LINUX_SIG\", \"url\": \"https://github.com/$REPO/releases/download/$TAG/$LINUX_TAR\"}")
+          fi
+
+          echo "$MANIFEST" | jq . > latest.json
+          echo "Generated manifest:"
+          cat latest.json
+
+          # Publish release (make it visible)
+          gh release edit "$TAG" --draft=false
+
+          # Upload manifest
+          gh release upload "$TAG" latest.json --clobber

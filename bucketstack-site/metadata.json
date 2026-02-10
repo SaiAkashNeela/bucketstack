@@ -1,0 +1,5 @@
+{
+  "name": "BucketStack",
+  "description": "A fast, local desktop app to manage S3-compatible storage without running a server.",
+  "requestFramePermissions": []
+}
