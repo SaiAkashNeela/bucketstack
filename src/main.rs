@@ -2788,6 +2788,43 @@ fn main() {
 
             Ok(())
         })
-        .run(generate_context!())
-        .expect("error while running tauri application");
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                // If the main window is closed on macOS, hide it instead of closing
+                // so we can quickly reopen it from the dock or tray without losing state.
+                #[cfg(target_os = "macos")]
+                {
+                    // Only apply to the main window
+                    if window.label() == "main" {
+                        let _ = window.hide();
+                        api.prevent_close();
+                    }
+                }
+            }
+        })
+        .build(generate_context!())
+        .expect("error while running tauri application")
+        .run(|app, event| match event {
+            tauri::RunEvent::ExitRequested { api, .. } => {
+                // on macOS, we generally want to keep the app running in the background
+                // when the last window is closed, unless the user explicitly quits (Cmd+Q).
+                #[cfg(target_os = "macos")]
+                {
+                    api.prevent_exit();
+                }
+            }
+
+            #[cfg(target_os = "macos")]
+            tauri::RunEvent::Reopen { has_visible_windows, .. } => {
+                // If the user clicks the dock icon and no windows are visible, show the main window.
+                if !has_visible_windows {
+                    if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                }
+            }
+
+            _ => {}
+        });
 }
