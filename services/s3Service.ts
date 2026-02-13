@@ -439,19 +439,29 @@ export const s3Service = {
     } catch (error: any) {
       console.error('Connection test failed:', error);
 
-      // Provide more specific error messages
-      if (error.message?.includes('InvalidAccessKeyId')) {
+      const msg = error.message || '';
+
+      // Provide more specific error messages based on error type
+      if (msg.includes('InvalidAccessKeyId')) {
         throw new Error("Invalid Access Key ID - Check your credentials");
-      } else if (error.message?.includes('SignatureDoesNotMatch')) {
+      } else if (msg.includes('SignatureDoesNotMatch')) {
         throw new Error("Invalid Secret Access Key - Check your credentials");
-      } else if (error.message?.includes('NoSuchBucket')) {
+      } else if (msg.includes('NoSuchBucket')) {
         throw new Error(`Bucket "${account.bucketName}" does not exist. Create the bucket or check the name.`);
-      } else if (error.message?.includes('AccessDenied')) {
+      } else if (msg.includes('AccessDenied')) {
         throw new Error(`Access denied to bucket "${account.bucketName}". Check your credentials and permissions.`);
-      } else if (error.message?.includes('Failed to access bucket')) {
-        throw new Error(`Cannot access bucket: ${error.message}`);
+      } else if (msg.includes('timeout') || msg.includes('TimeoutError')) {
+        throw new Error("Connection timeout - Check your endpoint URL and network connectivity");
+      } else if (msg.includes('certificate') || msg.includes('SSL') || msg.includes('TLS')) {
+        throw new Error("SSL/TLS certificate error - Verify your endpoint uses a valid certificate");
+      } else if (msg.includes('ENOTFOUND') || msg.includes('getaddrinfo') || msg.includes('DNS')) {
+        throw new Error("Cannot resolve endpoint URL - Check your endpoint is correct and accessible");
+      } else if (msg.includes('ECONNREFUSED') || msg.includes('Connection refused')) {
+        throw new Error("Connection refused - Verify the endpoint is running and accessible");
+      } else if (msg.includes('Failed to access bucket')) {
+        throw new Error(`Cannot access bucket: ${msg}`);
       } else {
-        throw new Error(`Connection failed: ${error.message || "Unknown error occurred"}`);
+        throw new Error(`Connection failed: ${msg || "Unexpected error. Check your endpoint, credentials, and network connectivity."}`);
       }
     }
   },

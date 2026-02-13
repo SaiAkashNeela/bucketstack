@@ -77,6 +77,13 @@ impl SecurityManager {
         final_blob.extend_from_slice(&nonce_bytes);
         final_blob.extend_from_slice(&ciphertext);
 
+        // Ensure parent directory exists
+        if let Some(parent) = self.file_path.parent() {
+            if !parent.exists() {
+                let _ = fs::create_dir_all(parent);
+            }
+        }
+
         // Save to file
         fs::write(&self.file_path, final_blob)
             .map_err(|e| format!("Failed to write credentials file: {}", e))?;
@@ -177,4 +184,43 @@ pub fn init_security_manager() {
 
 pub fn get_manager() -> std::sync::MutexGuard<'static, SecurityManager> {
     SECURITY_MANAGER.get().expect("Security manager not initialized").lock().unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn test_save_creates_directory_if_missing() {
+        // Create a unique temp path
+        let temp_dir = std::env::temp_dir().join(format!("bucketstack_test_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        let file_path = temp_dir.join("creds.enc");
+
+        // Ensure clean state: remove parent directory if it happens to exist
+        if temp_dir.exists() {
+            fs::remove_dir_all(&temp_dir).unwrap();
+        }
+        assert!(!temp_dir.exists());
+
+        // Create manager manually with the test path
+        // We can access private fields since we are in a child module of the file
+        let key = SecurityManager::derive_key();
+        let manager = SecurityManager { key, file_path: file_path.clone() };
+        
+        // Save dummy data
+        let mut map = HashMap::new();
+        map.insert("test".to_string(), "value".to_string());
+        
+        // This should succeed (would fail before fix)
+        let result = manager.save_map(&map);
+        assert!(result.is_ok(), "save_map failed: {:?}", result.err());
+        
+        // Verify directory and file exist
+        assert!(temp_dir.exists());
+        assert!(file_path.exists());
+        
+        // Cleanup
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
 }
