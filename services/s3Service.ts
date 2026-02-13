@@ -202,9 +202,9 @@ export const s3Service = {
     const stored = localStorage.getItem(ACCOUNTS_KEY);
     const metadataList: S3AccountMetadata[] = stored ? JSON.parse(stored) : [];
 
-
     // Retrieve credentials for each account from secure storage
     const accounts: S3Account[] = [];
+    const staleAccountIds: string[] = [];
 
     for (const metadata of metadataList) {
       try {
@@ -228,12 +228,25 @@ export const s3Service = {
             accessKeyId: accessKeyId.trim(),
             secretAccessKey: secretAccessKey.trim()
           });
+        } else {
+          // Mark account as stale (missing credentials)
+          staleAccountIds.push(metadata.id);
+          console.warn(`Account ${metadata.id} is missing credentials - marked for cleanup`);
         }
       } catch (error) {
         console.warn(`Failed to retrieve credentials for account ${metadata.id}:`, error);
         logSecurityEvent('CREDENTIAL_RETRIEVAL_FAILED', { accountId: metadata.id });
-        // Skip accounts with missing credentials
+        // Mark as stale
+        staleAccountIds.push(metadata.id);
       }
+    }
+
+    // Clean up stale accounts (missing credentials) from localStorage
+    if (staleAccountIds.length > 0) {
+      console.log(`Cleaning up ${staleAccountIds.length} stale account(s) due to missing credentials`);
+      const updatedMetadata = metadataList.filter(m => !staleAccountIds.includes(m.id));
+      localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(updatedMetadata));
+      logSecurityEvent('STALE_ACCOUNTS_CLEANED', { count: staleAccountIds.length, ids: staleAccountIds });
     }
 
     logSecurityEvent('ACCOUNTS_LOADED', { count: accounts.length });
@@ -248,6 +261,15 @@ export const s3Service = {
   saveAccount: async (account: S3Account): Promise<void> => {
     if (!checkRateLimit('save_account')) {
       throw new Error('Rate limit exceeded. Too many account save operations.');
+    }
+
+    // Validate account has required fields
+    if (!account.accessKeyId || !account.secretAccessKey) {
+      throw new Error('Account is missing access key or secret key');
+    }
+
+    if (!account.bucketName) {
+      throw new Error('Account is missing bucket name');
     }
 
     logSecurityEvent('ACCOUNT_SAVE_STARTED', {
@@ -285,6 +307,10 @@ export const s3Service = {
       logSecurityEvent('ACCOUNT_SAVE_SUCCESS', { accountId: account.id, name: account.name });
     } catch (error: any) {
       logSecurityEvent('ACCOUNT_SAVE_FAILED', { accountId: account.id, error: error.message });
+      // Provide more helpful error message
+      if (error.message?.includes('secure') || error.message?.includes('storage')) {
+        throw new Error(`Failed to save credentials securely: ${error.message}`);
+      }
       throw error;
     }
   },
@@ -1313,6 +1339,24 @@ export const s3Service = {
       console.error('Failed to log activity:', e);
     }
   },
+
+  deleteTrashFolder: async (account: S3Account): Promise<boolean> => {
+    try {
+      const sanitizedEndpoint = (account.endpoint && account.endpoint.includes('amazonaws.com')) ? '' : account.endpoint;
+      const success = await invoke<boolean>('delete_trash_folder', {
+        endpoint: sanitizedEndpoint,
+        region: account.region,
+        accessKeyId: account.accessKeyId.trim(),
+        secretAccessKey: account.secretAccessKey.trim(),
+        bucket: account.bucketName,
+      });
+      return success;
+    } catch (error: any) {
+      console.error('Failed to delete trash folder:', error);
+      throw new Error(`Failed to clean up trash: ${error.message}`);
+    }
+  },
+
   clearAllData: clearAllData,
 };
 

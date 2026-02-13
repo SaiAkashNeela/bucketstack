@@ -10,7 +10,7 @@ interface AboutModalProps {
   version?: string;
 }
 
-export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, version = '0.0.1' }) => {
+export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, version = '1.0.0' }) => {
   if (!isOpen) return null;
 
   return createPortal(
@@ -31,7 +31,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, version
         <div className="p-6 space-y-6">
           {/* Logo & Version */}
           <div className="text-center">
-            <img src="./logo.png" alt="BucketStack" className="w-16 h-16 mx-auto mb-4 object-contain" />
+            <img src="/logo.png" alt="BucketStack" className="w-16 h-16 mx-auto mb-4 object-contain" />
             <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-2">BucketStack</h3>
             <p className="text-sm text-[var(--text-secondary)] mb-2">Native S3 File Manager</p>
             <div className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">

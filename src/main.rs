@@ -2623,6 +2623,62 @@ async fn reset_application(_app: tauri::AppHandle) -> Result<bool, String> {
     Ok(true)
 }
 
+#[command]
+async fn delete_trash_folder(
+    endpoint: String,
+    region: String,
+    access_key_id: String,
+    secret_access_key: String,
+    bucket: String,
+) -> Result<bool, String> {
+    let access_key_id = access_key_id.trim();
+    let secret_access_key = secret_access_key.trim();
+
+    let client = create_s3_client(&endpoint, &region, &access_key_id, &secret_access_key).await;
+
+    // List all objects with .trash/ prefix
+    let mut continuation_token: Option<String> = None;
+    let mut deleted_count = 0;
+
+    loop {
+        let mut list_req = client.list_objects_v2()
+            .bucket(&bucket)
+            .prefix(".trash/")
+            .max_keys(1000);
+
+        if let Some(token) = continuation_token {
+            list_req = list_req.continuation_token(token);
+        }
+
+        let response = list_req.send().await
+            .map_err(|e| format!("Failed to list trash objects: {}", e))?;
+
+        // Delete all objects in this batch
+        let contents = response.contents();
+        for obj in contents {
+            if let Some(key) = obj.key() {
+                client.delete_object()
+                    .bucket(&bucket)
+                    .key(key)
+                    .send()
+                    .await
+                    .map_err(|e| format!("Failed to delete trash object {}: {}", key, e))?;
+                deleted_count += 1;
+            }
+        }
+
+        // Check if there are more results
+        let is_truncated = response.is_truncated().unwrap_or(false);
+        if is_truncated {
+            continuation_token = response.next_continuation_token().map(|s| s.to_string());
+        } else {
+            break;
+        }
+    }
+
+    println!("Successfully deleted {} objects from .trash/", deleted_count);
+    Ok(true)
+}
 
 fn main() {
     // Initialize security manager
@@ -2676,7 +2732,8 @@ fn main() {
             log_activity_entry,
             download_file_to_path,
             upload_paths,
-            reset_application
+            reset_application,
+            delete_trash_folder
         ])
         .setup(|app| {
             // Initialize activity log database

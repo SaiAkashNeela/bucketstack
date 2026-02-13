@@ -11,6 +11,7 @@ import {
 import { useTheme } from './ThemeProvider';
 import { S3Account, S3Object, ViewMode, UploadProgress, SortField, SortOrder, FilterOptions } from '../types';
 import { MonacoFilePreview } from './MonacoFilePreview';
+import { TipCarousel } from './TipCarousel';
 
 interface FileExplorerProps {
   objects: S3Object[];
@@ -941,19 +942,17 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       </div>
 
       {/* Footer Stats */}
-      <div className="h-9 border-t border-[var(--border-primary)] bg-[var(--bg-primary)]/80 backdrop-blur flex items-center px-4 text-[11px] font-medium text-[var(--text-tertiary)] justify-between select-none">
-        <div className="flex gap-4">
+      <div className="h-9 border-t border-[var(--border-primary)] bg-[var(--bg-primary)]/80 backdrop-blur flex items-center px-4 text-[11px] font-medium text-[var(--text-tertiary)] justify-center gap-8 select-none relative">
+        <div className="flex gap-4 absolute left-4">
           <span>{processedObjects.length} item{processedObjects.length !== 1 && 's'}</span>
           <span className="text-[var(--border-secondary)]">|</span>
           <span>
             {selectedKeys.size > 0 ? `${selectedKeys.size} selected` : `${formatSize(processedObjects.reduce((acc, obj) => acc + obj.size, 0))} total`}
           </span>
         </div>
-        {!currentPrefix && viewMode !== 'gallery' && (
-          <div className="hidden sm:block text-[10px] italic opacity-60">
-            tip: change view to Gallery to automatically see your file previews
-          </div>
-        )}
+        <div className="hidden sm:block">
+          <TipCarousel />
+        </div>
       </div>
 
       {/* --- Context Menu --- */}

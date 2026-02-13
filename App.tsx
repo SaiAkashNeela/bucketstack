@@ -481,6 +481,32 @@ const App: React.FC = () => {
   // --- Handlers ---
 
   const handleAddAccount = async (account: S3Account) => {
+    // Check if trash is being disabled (was enabled, now disabled)
+    const wasTrashEnabled = editingAccount?.enableTrash ?? false;
+    const isTrashNowDisabled = wasTrashEnabled && !account.enableTrash;
+
+    if (isTrashNowDisabled) {
+      // Show confirmation dialog
+      const confirmed = window.confirm(
+        'You are disabling Trash for this bucket.\n\nThis will permanently delete the existing .trash/ folder and all files in it. This action cannot be undone.\n\nDo you want to continue?'
+      );
+
+      if (!confirmed) {
+        // User cancelled, revert the change
+        return;
+      }
+
+      // User confirmed - delete the trash folder
+      try {
+        await s3Service.deleteTrashFolder(account);
+        showToast('Trash folder cleaned up successfully', 'success');
+      } catch (error: any) {
+        console.warn('Could not clean up trash:', error.message);
+        showToast(`Could not clean up trash: ${error.message}`, 'error');
+        // Continue with save anyway - trash is disabled
+      }
+    }
+
     if (editingAccount) {
       // Edit existing account
       await s3Service.saveAccount(account);
@@ -533,9 +559,20 @@ const App: React.FC = () => {
       setIsMultiBucketModalOpen(false);
 
       showToast(`${successCount} bucket${successCount > 1 ? 's' : ''} added successfully`, 'success');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to add multiple buckets:', error);
-      showToast('Failed to add some buckets. See console for details.', 'error');
+      // Provide more helpful error message based on the error type
+      let errorMessage = 'Failed to add some buckets. See console for details.';
+      if (error.message?.includes('missing access key') || error.message?.includes('missing secret key')) {
+        errorMessage = 'Missing credentials. Please check your access key and secret key.';
+      } else if (error.message?.includes('missing bucket name')) {
+        errorMessage = 'Missing bucket name. Please provide a bucket name.';
+      } else if (error.message?.includes('secure') || error.message?.includes('storage')) {
+        errorMessage = 'Failed to save credentials securely. Please try again or restart the app.';
+      } else if (error.message) {
+        errorMessage = `Failed to add bucket: ${error.message}`;
+      }
+      showToast(errorMessage, 'error');
     }
   };
 
