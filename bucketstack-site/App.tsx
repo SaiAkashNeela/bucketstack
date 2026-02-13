@@ -121,7 +121,7 @@ function App() {
                 A native, beautiful, and secure file manager for AWS S3, Cloudflare R2, MinIO, and more. <span className="text-gray-900 font-medium">No electrons harmed (Built with Rust).</span>
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 flex-wrap">
-                <a href={downloadLinks?.macos?.arm64 || '#'}>
+                <a href={downloadLinks?.macos || '#'}>
                   <Button size="lg" className="h-12 px-6 text-sm gap-2 shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 transition-all hover:-translate-y-0.5">
                     <AppleLogo className="w-5 h-5 -mt-0.5" />
                     <span>macOS</span>
@@ -318,7 +318,7 @@ function App() {
                 <AppleLogo className="w-12 h-12 mb-6 text-gray-900" />
                 <h3 className="font-bold text-lg mb-1">macOS</h3>
                 <p className="text-xs text-gray-500 mb-6">Universal (Apple Silicon/Intel)</p>
-                <a href={downloadLinks?.macos?.arm64 || '#'} className="w-full">
+                <a href={downloadLinks?.macos || '#'} className="w-full">
                   <Button className="w-full">Download DMG</Button>
                 </a>
               </div>

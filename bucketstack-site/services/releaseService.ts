@@ -37,23 +37,18 @@ export const releaseService = {
     const manifest = await this.getLatestRelease();
 
     if (!manifest) {
+      // Fallback to v1.0.0
       return {
         version: null,
-        macos: {
-          arm64: 'https://github.com/SaiAkashNeela/bucketstack/releases/download/v0.0.1/BucketStack_0.0.1_aarch64.dmg',
-          x64: 'https://github.com/SaiAkashNeela/bucketstack/releases/download/v0.0.1/BucketStack_0.0.1_x64.dmg',
-        },
-        windows: 'https://github.com/SaiAkashNeela/bucketstack/releases/download/v0.0.1/BucketStack_0.0.1_x64-setup.exe',
-        linux: 'https://github.com/SaiAkashNeela/bucketstack/releases/tag/v0.0.1',
+        macos: 'https://github.com/SaiAkashNeela/bucketstack/releases/download/v1.0.0/BucketStack_1.0.0_aarch64.dmg',
+        windows: 'https://github.com/SaiAkashNeela/bucketstack/releases/download/v1.0.0/BucketStack_1.0.0_x64-setup.exe',
+        linux: 'https://github.com/SaiAkashNeela/bucketstack/releases/tag/v1.0.0',
       };
     }
 
     return {
       version: manifest.version,
-      macos: {
-        arm64: manifest.platforms['darwin-aarch64']?.url || 'https://github.com/SaiAkashNeela/bucketstack/releases',
-        x64: manifest.platforms['darwin-x86_64']?.url || 'https://github.com/SaiAkashNeela/bucketstack/releases',
-      },
+      macos: manifest.platforms['darwin-aarch64']?.url || 'https://github.com/SaiAkashNeela/bucketstack/releases',
       windows: manifest.platforms['windows-x86_64']?.url || 'https://github.com/SaiAkashNeela/bucketstack/releases',
       linux: manifest.platforms['linux-x86_64']?.url || 'https://github.com/SaiAkashNeela/bucketstack/releases',
     };
