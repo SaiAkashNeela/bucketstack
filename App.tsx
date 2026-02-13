@@ -481,6 +481,32 @@ const App: React.FC = () => {
   // --- Handlers ---
 
   const handleAddAccount = async (account: S3Account) => {
+    // Check if trash is being disabled (was enabled, now disabled)
+    const wasTrashEnabled = editingAccount?.enableTrash ?? false;
+    const isTrashNowDisabled = wasTrashEnabled && !account.enableTrash;
+
+    if (isTrashNowDisabled) {
+      // Show confirmation dialog
+      const confirmed = window.confirm(
+        'You are disabling Trash for this bucket.\n\nThis will permanently delete the existing .trash/ folder and all files in it. This action cannot be undone.\n\nDo you want to continue?'
+      );
+
+      if (!confirmed) {
+        // User cancelled, revert the change
+        return;
+      }
+
+      // User confirmed - delete the trash folder
+      try {
+        await s3Service.deleteTrashFolder(account);
+        showToast('Trash folder cleaned up successfully', 'success');
+      } catch (error: any) {
+        console.warn('Could not clean up trash:', error.message);
+        showToast(`Could not clean up trash: ${error.message}`, 'error');
+        // Continue with save anyway - trash is disabled
+      }
+    }
+
     if (editingAccount) {
       // Edit existing account
       await s3Service.saveAccount(account);

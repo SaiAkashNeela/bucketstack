@@ -1339,6 +1339,24 @@ export const s3Service = {
       console.error('Failed to log activity:', e);
     }
   },
+
+  deleteTrashFolder: async (account: S3Account): Promise<boolean> => {
+    try {
+      const sanitizedEndpoint = (account.endpoint && account.endpoint.includes('amazonaws.com')) ? '' : account.endpoint;
+      const success = await invoke<boolean>('delete_trash_folder', {
+        endpoint: sanitizedEndpoint,
+        region: account.region,
+        accessKeyId: account.accessKeyId.trim(),
+        secretAccessKey: account.secretAccessKey.trim(),
+        bucket: account.bucketName,
+      });
+      return success;
+    } catch (error: any) {
+      console.error('Failed to delete trash folder:', error);
+      throw new Error(`Failed to clean up trash: ${error.message}`);
+    }
+  },
+
   clearAllData: clearAllData,
 };
 
