@@ -11,6 +11,7 @@ import { AccountModal } from './components/AccountModal';
 import { FileEditorModal } from './components/FileEditorModal';
 import { ThemeProvider } from './components/ThemeProvider';
 import { s3Service } from './services/s3Service';
+import { versionService } from './services/versionService';
 import { UploadConflictModal } from './components/UploadConflictModal';
 import { activityService } from './services/activityService';
 import { S3Account, S3Object, ViewMode, UploadProgress, FavouriteItem, BucketAnalytics } from './types';
@@ -92,6 +93,10 @@ const App: React.FC = () => {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [isTermsReadOnly, setIsTermsReadOnly] = useState(false);
+
+  // Version Check State
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
 
   // Refs for listeners
   const unlistenDropRef = useRef<any>(null);
@@ -178,6 +183,17 @@ const App: React.FC = () => {
       }
     };
     loadAccounts();
+  }, []);
+
+  // Check for app updates
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      const versionInfo = await versionService.getLatestVersion();
+      if (versionInfo.isUpdateAvailable) {
+        setUpdateAvailable(true);
+      }
+    };
+    checkForUpdates();
   }, []);
 
   // Permission Check Logic
@@ -1877,6 +1893,8 @@ const App: React.FC = () => {
               onEmptyTrash={handleEmptyTrash}
               favourites={favourites}
               onToggleFavourite={handleToggleFavourite}
+              updateAvailable={updateAvailable}
+              onDownloadUpdate={() => versionService.openDownloadPage()}
             />
           )}
 

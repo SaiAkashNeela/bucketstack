@@ -29,6 +29,7 @@ import DemoTrayWindow from './components/DemoTrayWindow';
 import ProviderIcon from './components/ProviderIcon';
 import { HelmetProvider } from 'react-helmet-async';
 import SEO from './components/SEO';
+import { releaseService } from './services/releaseService';
 
 // Authentic OS Logos
 const AppleLogo = ({ className }: { className?: string }) => (
@@ -51,6 +52,11 @@ const LinuxLogo = ({ className }: { className?: string }) => (
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [downloadLinks, setDownloadLinks] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    releaseService.getDownloadLinks().then(setDownloadLinks);
+  }, []);
 
   return (
     <HelmetProvider>
@@ -105,7 +111,7 @@ function App() {
             <div className="text-center max-w-4xl mx-auto mb-16">
               <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold mb-6 border border-blue-100">
                 <span className="flex h-2 w-2 rounded-full bg-blue-500 mr-2 animate-pulse"></span>
-                v0.0.1 Public Beta
+                v1.0.0
               </div>
               <h1 className="text-5xl md:text-7xl font-bold text-gray-900 tracking-tight mb-8 leading-[1.1]">
                 Manage S3 Buckets <br className="hidden md:block" />
@@ -115,19 +121,19 @@ function App() {
                 A native, beautiful, and secure file manager for AWS S3, Cloudflare R2, MinIO, and more. <span className="text-gray-900 font-medium">No electrons harmed (Built with Rust).</span>
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 flex-wrap">
-                <a href="https://github.com/SaiAkashNeela/bucketstack/releases/download/v0.0.1/BucketStack_0.0.1_aarch64.dmg">
+                <a href={downloadLinks?.macos?.arm64 || '#'}>
                   <Button size="lg" className="h-12 px-6 text-sm gap-2 shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 transition-all hover:-translate-y-0.5">
                     <AppleLogo className="w-5 h-5 -mt-0.5" />
                     <span>macOS</span>
                   </Button>
                 </a>
-                <a href="https://github.com/SaiAkashNeela/bucketstack/releases/download/v0.0.1/BucketStack_0.0.1_x64-setup.exe">
+                <a href={downloadLinks?.windows || '#'}>
                   <Button size="lg" variant="secondary" className="h-12 px-6 text-sm gap-2 border border-gray-200">
                     <WindowsLogo className="w-5 h-5" />
                     <span>Windows</span>
                   </Button>
                 </a>
-                <a href="https://github.com/SaiAkashNeela/bucketstack/releases/tag/v0.0.1" target="_blank" rel="noopener noreferrer">
+                <a href={downloadLinks?.linux || '#'} target="_blank" rel="noopener noreferrer">
                   <Button size="lg" variant="secondary" className="h-12 px-6 text-sm gap-2 border border-gray-200">
                     <LinuxLogo className="w-5 h-5" />
                     <span>Linux</span>
@@ -312,7 +318,7 @@ function App() {
                 <AppleLogo className="w-12 h-12 mb-6 text-gray-900" />
                 <h3 className="font-bold text-lg mb-1">macOS</h3>
                 <p className="text-xs text-gray-500 mb-6">Universal (Apple Silicon/Intel)</p>
-                <a href="https://github.com/SaiAkashNeela/bucketstack/releases/download/v0.0.1/BucketStack_0.0.1_aarch64.dmg" className="w-full">
+                <a href={downloadLinks?.macos?.arm64 || '#'} className="w-full">
                   <Button className="w-full">Download DMG</Button>
                 </a>
               </div>
@@ -320,7 +326,7 @@ function App() {
                 <WindowsLogo className="w-12 h-12 mb-6 text-blue-600" />
                 <h3 className="font-bold text-lg mb-1">Windows</h3>
                 <p className="text-xs text-gray-500 mb-6">Windows 10/11 (x64)</p>
-                <a href="https://github.com/SaiAkashNeela/bucketstack/releases/download/v0.0.1/BucketStack_0.0.1_x64-setup.exe" className="w-full">
+                <a href={downloadLinks?.windows || '#'} className="w-full">
                   <Button variant="secondary" className="w-full">Download EXE</Button>
                 </a>
               </div>
@@ -328,7 +334,7 @@ function App() {
                 <LinuxLogo className="w-12 h-12 mb-6 text-orange-500" />
                 <h3 className="font-bold text-lg mb-1">Linux</h3>
                 <p className="text-xs text-gray-500 mb-6">AppImage / RPM / Deb Available</p>
-                <a href="https://github.com/SaiAkashNeela/bucketstack/releases/tag/v0.0.1" target="_blank" rel="noopener noreferrer" className="w-full">
+                <a href={downloadLinks?.linux || '#'} target="_blank" rel="noopener noreferrer" className="w-full">
                   <Button variant="secondary" className="w-full">See Releases</Button>
                 </a>
               </div>
