@@ -10,7 +10,7 @@ interface AboutModalProps {
   version?: string;
 }
 
-export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, version = '1.0.0' }) => {
+export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, version = '1.0.1' }) => {
   if (!isOpen) return null;
 
   return createPortal(

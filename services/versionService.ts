@@ -22,7 +22,7 @@ function compareVersions(current: string, latest: string): number {
 
 export const versionService = {
   getCurrentVersion(): string {
-    return '1.0.0';
+    return '1.0.1';
   },
 
   async getLatestVersion(): Promise<VersionInfo> {

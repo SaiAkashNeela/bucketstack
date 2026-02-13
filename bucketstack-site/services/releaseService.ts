@@ -37,12 +37,12 @@ export const releaseService = {
     const manifest = await this.getLatestRelease();
 
     if (!manifest) {
-      // Fallback to v1.0.0
+      // Fallback to v1.0.1
       return {
         version: null,
-        macos: 'https://github.com/SaiAkashNeela/bucketstack/releases/download/v1.0.0/BucketStack_1.0.0_aarch64.dmg',
-        windows: 'https://github.com/SaiAkashNeela/bucketstack/releases/download/v1.0.0/BucketStack_1.0.0_x64-setup.exe',
-        linux: 'https://github.com/SaiAkashNeela/bucketstack/releases/tag/v1.0.0',
+        macos: 'https://github.com/SaiAkashNeela/bucketstack/releases/download/v1.0.1/BucketStack_1.0.1_aarch64.dmg',
+        windows: 'https://github.com/SaiAkashNeela/bucketstack/releases/download/v1.0.1/BucketStack_1.0.1_x64-setup.exe',
+        linux: 'https://github.com/SaiAkashNeela/bucketstack/releases/tag/v1.0.1',
       };
     }
 
