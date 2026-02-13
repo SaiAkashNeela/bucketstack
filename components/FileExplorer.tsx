@@ -49,6 +49,8 @@ interface FileExplorerProps {
   onEmptyTrash?: () => void;
   favourites?: FavouriteItem[];
   onToggleFavourite?: (object: S3Object) => void;
+  updateAvailable?: boolean;
+  onDownloadUpdate?: () => void;
 }
 
 import { FavouriteItem } from '../types';
@@ -90,6 +92,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   onEmptyTrash,
   favourites = [],
   onToggleFavourite,
+  updateAvailable = false,
+  onDownloadUpdate,
 }) => {
   const isTrash = currentPrefix?.startsWith('.trash/') || false;
   const { theme } = useTheme();
@@ -950,7 +954,16 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             {selectedKeys.size > 0 ? `${selectedKeys.size} selected` : `${formatSize(processedObjects.reduce((acc, obj) => acc + obj.size, 0))} total`}
           </span>
         </div>
-        <div className="hidden sm:block">
+        <div className="hidden sm:flex items-center gap-4">
+          {updateAvailable && (
+            <button
+              onClick={onDownloadUpdate}
+              className="px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors flex items-center gap-2 border border-green-200"
+            >
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              Update Available - Download
+            </button>
+          )}
           <TipCarousel />
         </div>
       </div>
