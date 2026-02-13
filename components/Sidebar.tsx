@@ -404,7 +404,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* About Modal */}
-      <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} version="0.0.1" />
+      <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} version="1.0.0" />
 
       {/* Account Context Menu */}
       {
