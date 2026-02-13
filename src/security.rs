@@ -90,11 +90,20 @@ impl SecurityManager {
             return Ok(HashMap::new());
         }
 
-        let file_content = fs::read(&self.file_path)
-            .map_err(|e| format!("Failed to read credentials file: {}", e))?;
+        let file_content = match fs::read(&self.file_path) {
+            Ok(content) => content,
+            Err(e) => {
+                // If we can't read the file, just start fresh
+                eprintln!("Warning: Failed to read credentials file, starting fresh: {}", e);
+                return Ok(HashMap::new());
+            }
+        };
 
         if file_content.len() < 12 {
-            return Err("Invalid credentials file (too short)".to_string());
+            // Invalid file, delete it and start fresh
+            eprintln!("Warning: Invalid credentials file (too short), removing and starting fresh");
+            let _ = fs::remove_file(&self.file_path);
+            return Ok(HashMap::new());
         }
 
         // Extract nonce and ciphertext
@@ -104,14 +113,36 @@ impl SecurityManager {
         let cipher = Aes256Gcm::new(&self.key.into());
 
         // Decrypt
-        let plaintext = cipher.decrypt(nonce, ciphertext)
-            .map_err(|_| "Decryption failed - Machine ID might have changed or file is corrupted".to_string())?;
+        let plaintext = match cipher.decrypt(nonce, ciphertext) {
+            Ok(data) => data,
+            Err(e) => {
+                // Decryption failed - likely machine ID changed or file corrupted
+                // Delete the corrupted file and start fresh
+                eprintln!("Warning: Failed to decrypt credentials (machine ID may have changed), removing corrupted file and starting fresh: {:?}", e);
+                let _ = fs::remove_file(&self.file_path);
+                return Ok(HashMap::new());
+            }
+        };
 
-        let json = String::from_utf8(plaintext)
-            .map_err(|_| "Invalid UTF-8 in decrypted data".to_string())?;
+        let json = match String::from_utf8(plaintext) {
+            Ok(s) => s,
+            Err(_) => {
+                // Invalid UTF-8, delete and start fresh
+                eprintln!("Warning: Invalid UTF-8 in credentials file, removing and starting fresh");
+                let _ = fs::remove_file(&self.file_path);
+                return Ok(HashMap::new());
+            }
+        };
 
-        let map: HashMap<String, String> = serde_json::from_str(&json)
-            .map_err(|e| format!("Invalid JSON structure: {}", e))?;
+        let map: HashMap<String, String> = match serde_json::from_str(&json) {
+            Ok(m) => m,
+            Err(e) => {
+                // Invalid JSON, delete and start fresh
+                eprintln!("Warning: Invalid JSON in credentials file, removing and starting fresh: {}", e);
+                let _ = fs::remove_file(&self.file_path);
+                return Ok(HashMap::new());
+            }
+        };
 
         Ok(map)
     }

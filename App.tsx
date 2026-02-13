@@ -533,9 +533,20 @@ const App: React.FC = () => {
       setIsMultiBucketModalOpen(false);
 
       showToast(`${successCount} bucket${successCount > 1 ? 's' : ''} added successfully`, 'success');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to add multiple buckets:', error);
-      showToast('Failed to add some buckets. See console for details.', 'error');
+      // Provide more helpful error message based on the error type
+      let errorMessage = 'Failed to add some buckets. See console for details.';
+      if (error.message?.includes('missing access key') || error.message?.includes('missing secret key')) {
+        errorMessage = 'Missing credentials. Please check your access key and secret key.';
+      } else if (error.message?.includes('missing bucket name')) {
+        errorMessage = 'Missing bucket name. Please provide a bucket name.';
+      } else if (error.message?.includes('secure') || error.message?.includes('storage')) {
+        errorMessage = 'Failed to save credentials securely. Please try again or restart the app.';
+      } else if (error.message) {
+        errorMessage = `Failed to add bucket: ${error.message}`;
+      }
+      showToast(errorMessage, 'error');
     }
   };
 
