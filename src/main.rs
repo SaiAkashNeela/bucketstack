@@ -585,6 +585,11 @@ async fn list_objects(
     let contents = result.contents();
     for obj in contents {
         if let Some(key) = obj.key() {
+            // Skip directory marker objects (keys ending with '/'); they are
+            // already represented as common prefixes above.
+            if key.ends_with('/') {
+                continue;
+            }
             objects.push(S3Object {
                 key: key.to_string(),
                 size: obj.size().unwrap_or(0),
