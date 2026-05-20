@@ -1,0 +1,83 @@
+# BucketStack
+
+> A beautiful, secure, and native S3 bucket management application for macOS, Windows, and Linux built with Tauri, React, and Rust.
+
+## Cores
+
+- **Native Design**: macOS-style native desktop feel, auto dark/light mode integration.
+- **High Security**: AES-256-GCM encrypted credential storage bound to machine hardware identifier; no plaintext secrets.
+- **Blazing Fast Backend**: Rust-powered S3 file operations, transfer streams, and database logs.
+- **Multi-Provider S3**: Works with AWS S3, Cloudflare R2, MinIO, Wasabi, Backblaze B2, and custom S3-compatible endpoints.
+- **Rich Explorer**: List, Grid, Column, and Gallery view modes with drag-and-drop, cut/copy/paste, and soft-delete system.
+- **Monaco Code Editor**: Professional-grade code editor built-in with syntax highlighting for 50+ languages and direct inline S3 save.
+- **Background Sync**: Bi-directional scheduled folder synchronization running even when the app is closed.
+- **Analytics & Logs**: Storage analytics charts (pie/bar) and fully filterable SQLite-powered activity logging.
+
+---
+
+## Codebase Layout
+
+- **Frontend (`/components`, `/services`, `/hooks`)**: React 19 SPA running under Vite. Includes file view interfaces, account modals, transfer queues, and system hooks.
+- **Backend (`/src`)**: Tauri-orchestrated Rust commands interfacing with the AWS SDK and local platform libraries.
+  - [main.rs](file:///Users/saiakashneela/Github/bucketstack/src/main.rs): Entry point, Tauri setup, database helpers, S3 command handlers.
+  - [security.rs](file:///Users/saiakashneela/Github/bucketstack/src/security.rs): Custom encryption system employing AES-256-GCM linked directly to macOS Keychain, Windows Credential Manager, or Linux Secret Service via the machine UUID.
+- **Capabilities (`/capabilities`)**: Tauri security context configurations ensuring strict sandboxing for file access and external fetches.
+- **Scripts (`/scripts`)**: Bash shell workflow helpers for custom codesigning and Apple notarization.
+
+---
+
+## Core Backend Commands (Rust to Frontend IPC)
+
+The frontend communicates with [main.rs](file:///Users/saiakashneela/Github/bucketstack/src/main.rs) via Tauri's IPC `invoke()` framework. The available functions include:
+
+### Connection & Bucket Management
+- `test_s3_connection`: Checks keys and endpoints connectivity before saving.
+- `list_buckets`: Fetches list of buckets configured for a provider.
+- `create_bucket` / `delete_bucket`: Handles bucket-level creations and teardowns.
+
+### File & Object Operations
+- `list_objects` / `list_objects_recursive`: Fetches objects list with folder parsing.
+- `search_objects`: Fast wildcard search across bucket objects.
+- `calculate_folder_size`: Scans folders asynchronously to return byte sizes and content types.
+- `get_file_content` / `upload_file`: Inline text file viewing and saving (drives Monaco editor).
+- `delete_object` / `rename_object`: Deletes and renames objects.
+- `get_signed_url`: Generates temporary URLs for external file sharing.
+
+### Advanced Transfers & Multipart Uploads
+- `copy_object_file` / `copy_objects_folder`: Handles single and batch copying.
+- `stream_transfer_object`: Directly streams files between different cloud providers without writing to disk.
+- `compress_objects`: Archives files on-the-fly into `.zip` or `.tar.gz` and uploads back.
+- `sync_folder`: Starts bi-directional/directional folder synchronization.
+- `create_multipart_upload` / `upload_part` / `complete_multipart_upload` / `abort_multipart_upload`: Multi-threaded robust uploading for large files.
+
+### Security Storage (OS Keychain wrappers)
+- `save_secure_item` / `get_secure_item` / `delete_secure_item`: Accesses platform security hardware securely.
+
+### Database Log Management
+- `query_activity_log`: Select and filter activity events from SQLite DB.
+- `export_activity_log` / `clear_activity_log`: Exports log rows to CSV/JSON or purges DB.
+
+---
+
+## Installation & Running
+
+- **Development Mode**:
+  ```bash
+  bun install
+  bun run tauri:dev
+  ```
+- **Local macOS Build**:
+  ```bash
+  ./scripts/build.sh
+  ./scripts/notarize.sh
+  ```
+- **Automated CI**:
+  Pushed version tags `v*` trigger the GitHub Actions workflow to build, sign, notarize macOS, compile Windows/Linux artifacts, generate the update manifest, and auto-bump versions.
+
+---
+
+## Resources & Documentation
+
+- [Features Documentation](file:///Users/saiakashneela/Github/bucketstack/bucketstack-site/data/FEATURES.md): Deep dive into view modes, transfers, compression, sync, and logs.
+- [App Security Architecture](file:///Users/saiakashneela/Github/bucketstack/src/security.rs): Implementation code for machine-bound secure storage.
+- [Tauri Configuration](file:///Users/saiakashneela/Github/bucketstack/tauri.conf.json): Port mapping, bundle options, OS permissions.
