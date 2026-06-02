@@ -94,6 +94,9 @@ const App: React.FC = () => {
   const [showTerms, setShowTerms] = useState(false);
   const [isTermsReadOnly, setIsTermsReadOnly] = useState(false);
 
+  // Red dot: accountId -> true when bucket is inaccessible, false/absent when healthy
+  const [bucketErrors, setBucketErrors] = useState<Record<string, boolean>>({});
+
   // Version Check State
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [pendingUpdate, setPendingUpdate] = useState<any>(null);
@@ -237,18 +240,14 @@ const App: React.FC = () => {
       });
 
       if (result.success) {
-        // If permission changed, update it
-        if (result.accessMode !== account.accessMode) {
+        // Bucket accessible — clear any error dot
+        setBucketErrors(prev => { const n = { ...prev }; delete n[account.id]; return n; });
 
+        if (result.accessMode !== account.accessMode) {
           const updatedAccount = { ...account, accessMode: result.accessMode };
           await s3Service.saveAccount(updatedAccount);
-
           setAccounts(prev => prev.map(a => a.id === account.id ? updatedAccount : a));
-
-          if (activeAccount?.id === account.id) {
-            setActiveAccount(updatedAccount);
-          }
-
+          if (activeAccount?.id === account.id) setActiveAccount(updatedAccount);
           if (showToastOnchange) {
             const modeText = result.accessMode === 'read-only' ? 'Read-Only' : 'Read & Write';
             showToast(`Permissions updated: ${modeText}`, 'success');
@@ -256,12 +255,16 @@ const App: React.FC = () => {
         } else if (showToastOnchange) {
           showToast('Permissions verified: No changes detected', 'success');
         }
+      } else {
+        // Bucket inaccessible — show red dot
+        setBucketErrors(prev => ({ ...prev, [account.id]: true }));
+        if (showToastOnchange) showToast('Bucket is not accessible', 'error');
       }
     } catch (error) {
       console.error(`Permission check failed for ${account.name}:`, error);
-      if (showToastOnchange) {
-        showToast('Failed to verify permissions', 'error');
-      }
+      // Connection failed — show red dot
+      setBucketErrors(prev => ({ ...prev, [account.id]: true }));
+      if (showToastOnchange) showToast('Failed to verify permissions', 'error');
     }
   };
 
@@ -282,15 +285,14 @@ const App: React.FC = () => {
         }, index * 2000 + 1000);
       });
 
-      // Setup 24h interval background check
+      // Poll every 3 minutes
       const intervalId = setInterval(() => {
-
         accounts.forEach((acc, index) => {
           setTimeout(() => {
             checkAccountPermissions(acc);
           }, index * 2000);
         });
-      }, 24 * 60 * 60 * 1000); // 24 hours
+      }, 3 * 60 * 1000);
 
       return () => clearInterval(intervalId);
     }
@@ -1809,6 +1811,7 @@ const App: React.FC = () => {
             setCurrentPrefix('');
           }}
           onReloadPermissions={(acc) => checkAccountPermissions(acc, true)}
+          bucketErrors={bucketErrors}
           onAddAccount={() => {
             setIsAddConnectionModalOpen(true);
           }}

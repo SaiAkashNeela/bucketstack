@@ -31,6 +31,7 @@ interface SidebarProps {
   updateAvailable?: boolean;
   isInstallingUpdate?: boolean;
   onInstallUpdate?: () => void;
+  bucketErrors?: Record<string, boolean>;
 }
 
 const AccountIcon: React.FC<{ account: S3Account, className?: string }> = ({ account, className }) => {
@@ -84,6 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   updateAvailable = false,
   isInstallingUpdate = false,
   onInstallUpdate,
+  bucketErrors = {},
 }) => {
   const { theme } = useTheme();
   const [accountContextMenu, setAccountContextMenu] = useState<{ x: number, y: number, accountId: string } | null>(null);
@@ -221,13 +223,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                     <div className="text-[10px] opacity-70 truncate">{acc.bucketName}</div>
                   </div>
-                  {/*
-                  {acc.accessMode === 'read-only' && (
-                    <div className="pl-2" title="Read-Only Access">
-                      <Eye size={12} className={activeAccount?.id === acc.id ? "text-white/70" : "text-[var(--text-tertiary)]"} />
-                    </div>
+                  {bucketErrors[acc.id] && (
+                    <span
+                      className="shrink-0 w-2 h-2 rounded-full bg-red-500 block"
+                      title="Bucket not accessible"
+                    />
                   )}
-                  */}
                 </button>
                 {/* Drop Zone Overlay */}
                 <div
