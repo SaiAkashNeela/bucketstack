@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
   "productName": "BucketStack",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "identifier": "com.bucketstack.desktop",
   "build": {
     "beforeDevCommand": "pnpm run dev",
