@@ -20,11 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
-      - uses: pnpm/action-setup@v4
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install
@@ -50,11 +51,12 @@ jobs:
           name: frontend-dist
           path: dist/
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
-      - uses: pnpm/action-setup@v4
+          cache: 'pnpm'
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -64,7 +66,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: '. -> target'
 
       - name: Install dependencies (for tauri CLI and build tools)
         run: pnpm install
@@ -108,11 +110,12 @@ jobs:
           name: frontend-dist
           path: dist/
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
-      - uses: pnpm/action-setup@v4
+          cache: 'pnpm'
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -122,7 +125,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: '. -> target'
 
       - name: Install system dependencies
         run: |
@@ -181,11 +184,12 @@ jobs:
           name: frontend-dist
           path: dist/
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
-      - uses: pnpm/action-setup@v4
+          cache: 'pnpm'
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -195,7 +199,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: '. -> target'
 
       - name: Import signing certificate
         run: |
