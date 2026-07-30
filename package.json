@@ -5,7 +5,8 @@
   "type": "module",
   "pnpm": {
     "overrides": {
-      "fast-xml-parser": ">=5.3.4"
+      "fast-xml-parser": ">=5.3.4",
+      "dompurify": ">=3.4.12"
     }
   },
   "scripts": {
