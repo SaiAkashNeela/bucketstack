@@ -4,8 +4,8 @@
   "version": "1.0.5",
   "identifier": "com.bucketstack.desktop",
   "build": {
-    "beforeDevCommand": "bun run dev",
-    "beforeBuildCommand": "bun run build",
+    "beforeDevCommand": "pnpm run dev",
+    "beforeBuildCommand": "pnpm run build",
     "frontendDist": "./dist",
     "devUrl": "http://localhost:3000"
   },

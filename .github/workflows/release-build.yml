@@ -24,15 +24,15 @@ jobs:
         with:
           node-version: '20'
 
-      - uses: oven-sh/setup-bun@v1
+      - uses: pnpm/action-setup@v4
         with:
-          bun-version: '1.1.8'
+          version: 10
 
       - name: Install dependencies
-        run: bun install
+        run: pnpm install
 
       - name: Build frontend
-        run: bun run build
+        run: pnpm run build
 
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v4
@@ -56,9 +56,9 @@ jobs:
         with:
           node-version: '20'
 
-      - uses: oven-sh/setup-bun@v1
+      - uses: pnpm/action-setup@v4
         with:
-          bun-version: '1.1.8'
+          version: 10
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -71,7 +71,7 @@ jobs:
           workspaces: './src-tauri -> target'
 
       - name: Install dependencies (for tauri CLI and build tools)
-        run: bun install
+        run: pnpm install
 
       - name: Resolve release tag
         id: get_tag
@@ -116,9 +116,9 @@ jobs:
         with:
           node-version: '20'
 
-      - uses: oven-sh/setup-bun@v1
+      - uses: pnpm/action-setup@v4
         with:
-          bun-version: '1.1.8'
+          version: 10
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -147,7 +147,7 @@ jobs:
             libfuse2
 
       - name: Install dependencies (for tauri CLI and build tools)
-        run: bun install
+        run: pnpm install
 
       - name: Resolve release tag
         id: get_tag
@@ -191,9 +191,9 @@ jobs:
         with:
           node-version: '20'
 
-      - uses: oven-sh/setup-bun@v1
+      - uses: pnpm/action-setup@v4
         with:
-          bun-version: '1.1.8'
+          version: 10
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -223,7 +223,7 @@ jobs:
           echo "${{ secrets.APPLE_API_KEY_CONTENT }}" | base64 --decode > ~/.private_keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8
 
       - name: Install dependencies
-        run: bun install
+        run: pnpm install
 
       - name: Resolve release tag
         id: get_tag
@@ -363,7 +363,7 @@ jobs:
             TAG="v$VERSION"
           fi
 
-          # Increment patch version (e.g. 1.0.4 → 1.0.5)
+          # Increment patch version (e.g. 1.0.5 → 1.0.6)
           MAJOR=$(echo $VERSION | cut -d. -f1)
           MINOR=$(echo $VERSION | cut -d. -f2)
           PATCH=$(echo $VERSION | cut -d. -f3)
@@ -391,7 +391,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Create and push release tag and version branch (e.g. v1.0.4)
+          # Create and push release tag and version branch (e.g. v1.0.5)
           git tag "$TAG" 2>/dev/null || true
           git push origin "$TAG" 2>/dev/null || true
           git push origin HEAD:refs/heads/"$TAG" 2>/dev/null || true
