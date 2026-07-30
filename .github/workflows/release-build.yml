@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       tag:
@@ -73,14 +75,28 @@ jobs:
       - name: Install dependencies (for tauri CLI and build tools)
         run: bun install
 
+      - name: Resolve release tag
+        id: get_tag
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+          elif [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            VERSION=$(jq -r '.version' package.json)
+            TAG="v$VERSION"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+        shell: bash
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ inputs.tag || github.ref_name }}
-          releaseName: 'BucketStack ${{ inputs.tag || github.ref_name }}'
+          tagName: ${{ steps.get_tag.outputs.tag }}
+          releaseName: 'BucketStack ${{ steps.get_tag.outputs.tag }}'
           releaseBody: 'See assets for all platform builds'
           releaseDraft: true
           prerelease: false
@@ -135,14 +151,27 @@ jobs:
       - name: Install dependencies (for tauri CLI and build tools)
         run: bun install
 
+      - name: Resolve release tag
+        id: get_tag
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+          elif [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            VERSION=$(jq -r '.version' package.json)
+            TAG="v$VERSION"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ inputs.tag || github.ref_name }}
-          releaseName: 'BucketStack ${{ inputs.tag || github.ref_name }}'
+          tagName: ${{ steps.get_tag.outputs.tag }}
+          releaseName: 'BucketStack ${{ steps.get_tag.outputs.tag }}'
           releaseBody: 'See assets for all platform builds'
           releaseDraft: true
           prerelease: false
@@ -198,6 +227,19 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Resolve release tag
+        id: get_tag
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+          elif [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            VERSION=$(jq -r '.version' package.json)
+            TAG="v$VERSION"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -208,8 +250,8 @@ jobs:
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
           APPLE_API_KEY_PATH: ~/.private_keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8
         with:
-          tagName: ${{ inputs.tag || github.ref_name }}
-          releaseName: 'BucketStack ${{ inputs.tag || github.ref_name }}'
+          tagName: ${{ steps.get_tag.outputs.tag }}
+          releaseName: 'BucketStack ${{ steps.get_tag.outputs.tag }}'
           releaseBody: 'See assets for all platform builds'
           releaseDraft: true
           prerelease: false
@@ -237,9 +279,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG=${{ inputs.tag || github.ref_name }}
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+            VERSION="${TAG#v}"
+          elif [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+            VERSION="${TAG#v}"
+          else
+            VERSION=$(jq -r '.version' package.json)
+            TAG="v$VERSION"
+          fi
           REPO=${{ github.repository }}
-          VERSION=${TAG#v}
 
           # Get release info
           RELEASE=$(gh release view "$TAG" --json body,publishedAt,assets)
@@ -304,10 +354,18 @@ jobs:
 
       - name: Bump patch version
         run: |
-          TAG=${{ inputs.tag || github.ref_name }}
-          VERSION=${TAG#v}
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+            VERSION="${TAG#v}"
+          elif [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+            VERSION="${TAG#v}"
+          else
+            VERSION=$(jq -r '.version' package.json)
+            TAG="v$VERSION"
+          fi
 
-          # Increment patch version (e.g. 1.0.2 → 1.0.3)
+          # Increment patch version (e.g. 1.0.4 → 1.0.5)
           MAJOR=$(echo $VERSION | cut -d. -f1)
           MINOR=$(echo $VERSION | cut -d. -f2)
           PATCH=$(echo $VERSION | cut -d. -f3)
@@ -335,5 +393,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add package.json tauri.conf.json Cargo.toml Cargo.lock bucketstack-site/services/releaseService.ts
-          git commit -m "chore: bump version to $NEW_VERSION"
+          git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
           git push origin main
