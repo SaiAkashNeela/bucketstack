@@ -304,12 +304,17 @@ jobs:
           # Extract asset filenames and build platform entries
           ASSETS=$(echo "$RELEASE" | jq -r '.assets[].name')
 
-          # macOS (universal binary: aarch64 + x86_64)
-          MACOS_TAR=$(echo "$ASSETS" | grep -E 'BucketStack_.*_universal\.tar\.gz$' | grep -v '\.sig$' | head -1 || true)
-          # Windows
-          WINDOWS_MSI=$(echo "$ASSETS" | grep -E '.*x64.*\.msi$' | head -1 || true)
-          # Linux
-          LINUX_TAR=$(echo "$ASSETS" | grep -E '.*x86_64.*linux.*\.tar\.gz$' | grep -v '\.sig$' | head -1 || true)
+          # macOS (universal binary: app.tar.gz or dmg)
+          MACOS_TAR=$(echo "$ASSETS" | grep -E '.*universal.*\.app\.tar\.gz$' | grep -v '\.sig$' | head -1 || true)
+          if [ -z "$MACOS_TAR" ]; then
+            MACOS_TAR=$(echo "$ASSETS" | grep -E '.*universal.*\.dmg$' | grep -v '\.sig$' | head -1 || true)
+          fi
+
+          # Windows (.msi or .exe)
+          WINDOWS_MSI=$(echo "$ASSETS" | grep -E '.*(x64|_64).*\.(msi|exe)$' | grep -v '\.sig$' | head -1 || true)
+
+          # Linux (.AppImage, .deb, .rpm, or .tar.gz)
+          LINUX_TAR=$(echo "$ASSETS" | grep -E '.*(amd64|x86_64).*\.(AppImage|deb|rpm|tar\.gz)$' | grep -v '\.sig$' | head -1 || true)
 
           # STRICT GUARD: Ensure all 3 platform builds succeeded and uploaded assets
           if [ -z "$MACOS_TAR" ] || [ -z "$WINDOWS_MSI" ] || [ -z "$LINUX_TAR" ]; then
@@ -329,14 +334,10 @@ jobs:
             MANIFEST=$(echo "$MANIFEST" | jq ".platforms[\"darwin-x86_64\"] = {\"signature\": \"$MACOS_SIG_URL\", \"url\": \"$MACOS_URL\"}")
           fi
 
-          # Windows
-          WINDOWS_MSI=$(echo "$ASSETS" | grep -E '.*x64.*\.msi$' | head -1 || true)
           if [ ! -z "$WINDOWS_MSI" ]; then
             MANIFEST=$(echo "$MANIFEST" | jq ".platforms[\"windows-x86_64\"] = {\"url\": \"https://github.com/$REPO/releases/download/$TAG/$WINDOWS_MSI\"}")
           fi
 
-          # Linux
-          LINUX_TAR=$(echo "$ASSETS" | grep -E '.*x86_64.*linux.*\.tar\.gz$' | grep -v '\.sig$' | head -1 || true)
           if [ ! -z "$LINUX_TAR" ]; then
             LINUX_SIG="$LINUX_TAR.sig"
             MANIFEST=$(echo "$MANIFEST" | jq ".platforms[\"linux-x86_64\"] = {\"signature\": \"https://github.com/$REPO/releases/download/$TAG/$LINUX_SIG\", \"url\": \"https://github.com/$REPO/releases/download/$TAG/$LINUX_TAR\"}")
