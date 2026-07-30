@@ -310,6 +310,21 @@ jobs:
 
           # macOS (universal binary: aarch64 + x86_64)
           MACOS_TAR=$(echo "$ASSETS" | grep -E 'BucketStack_.*_universal\.tar\.gz$' | grep -v '\.sig$' | head -1 || true)
+          # Windows
+          WINDOWS_MSI=$(echo "$ASSETS" | grep -E '.*x64.*\.msi$' | head -1 || true)
+          # Linux
+          LINUX_TAR=$(echo "$ASSETS" | grep -E '.*x86_64.*linux.*\.tar\.gz$' | grep -v '\.sig$' | head -1 || true)
+
+          # STRICT GUARD: Ensure all 3 platform builds succeeded and uploaded assets
+          if [ -z "$MACOS_TAR" ] || [ -z "$WINDOWS_MSI" ] || [ -z "$LINUX_TAR" ]; then
+            echo "::error::RELEASE CANCELLED! Not all platform builds succeeded."
+            echo "macOS binary: ${MACOS_TAR:-MISSING}"
+            echo "Windows binary: ${WINDOWS_MSI:-MISSING}"
+            echo "Linux binary: ${LINUX_TAR:-MISSING}"
+            echo "All 3 platform builds (macOS, Windows, Linux) must succeed before a release is published."
+            exit 1
+          fi
+
           if [ ! -z "$MACOS_TAR" ]; then
             MACOS_SIG="$MACOS_TAR.sig"
             MACOS_URL="https://github.com/$REPO/releases/download/$TAG/$MACOS_TAR"
