@@ -392,6 +392,12 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create and push release tag and version branch (e.g. v1.0.4)
+          git tag "$TAG" 2>/dev/null || true
+          git push origin "$TAG" 2>/dev/null || true
+          git push origin HEAD:refs/heads/"$TAG" 2>/dev/null || true
+
           git add package.json tauri.conf.json Cargo.toml Cargo.lock bucketstack-site/services/releaseService.ts
           git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
           git push origin main
