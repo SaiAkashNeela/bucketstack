@@ -3,6 +3,7 @@ import JSZip from 'jszip';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { secureStorage } from './secureStorage';
+import mime from 'mime-types';
 
 // Safe invoke wrapper that handles Tauri initialization errors gracefully
 const safeInvoke = async <T = any>(cmd: string, args?: Record<string, any>): Promise<T> => {
@@ -612,6 +613,11 @@ export const s3Service = {
       const fileSize = file.size;
       const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
 
+      const detectedMime = mime.lookup(key);
+      const contentType = (typeof detectedMime === 'string' && detectedMime)
+        ? detectedMime
+        : (file.type && file.type !== '' ? file.type : 'application/octet-stream');
+
       if (fileSize <= CHUNK_SIZE) {
         // --- Simple Upload (Small Files) ---
         const arrayBuffer = await file.arrayBuffer();
@@ -627,7 +633,7 @@ export const s3Service = {
           bucket,
           key,
           body,
-          contentType: file.type || 'application/octet-stream',
+          contentType,
         });
         onProgress(100);
       } else {
@@ -642,7 +648,7 @@ export const s3Service = {
           secretAccessKey: account.secretAccessKey.trim(),
           bucket,
           key,
-          contentType: file.type || 'application/octet-stream',
+          contentType,
         });
 
         try {

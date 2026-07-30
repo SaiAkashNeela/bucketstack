@@ -1121,13 +1121,19 @@ async fn upload_file(
 
     let client = S3Client::from_conf(s3_config.build());
     
+    let final_content_type = if content_type.is_empty() || content_type == "application/octet-stream" {
+        mime_guess::from_path(&key).first_or_octet_stream().to_string()
+    } else {
+        content_type
+    };
+
     // Upload file to S3
     client
         .put_object()
         .bucket(&bucket)
         .key(&key)
         .body(aws_sdk_s3::primitives::ByteStream::from(body))
-        .content_type(&content_type)
+        .content_type(&final_content_type)
         .send()
         .await
         .map_err(|e| format!("Failed to upload file: {}", e))?;
@@ -1401,11 +1407,17 @@ async fn create_multipart_upload(
     }
     let client = S3Client::from_conf(s3_config.build());
 
+    let final_content_type = if content_type.is_empty() || content_type == "application/octet-stream" {
+        mime_guess::from_path(&key).first_or_octet_stream().to_string()
+    } else {
+        content_type
+    };
+
     let result = client
         .create_multipart_upload()
         .bucket(&bucket)
         .key(&key)
-        .content_type(&content_type)
+        .content_type(&final_content_type)
         .send()
         .await
         .map_err(|e| format!("Failed to create multipart upload: {}", e))?;
@@ -1853,8 +1865,12 @@ async fn stream_transfer_object(
     let start_time = Instant::now();
     let mut transferred: u64 = 0;
 
+    let transfer_content_type = head.content_type().map(|s| s.to_string()).unwrap_or_else(|| {
+        mime_guess::from_path(&d_key).first_or_octet_stream().to_string()
+    });
+
     if total_size > 5 * 1024 * 1024 {
-        let multipart = d_client.create_multipart_upload().bucket(&d_bucket).key(&d_key).send().await
+        let multipart = d_client.create_multipart_upload().bucket(&d_bucket).key(&d_key).content_type(&transfer_content_type).send().await
             .map_err(|e| format!("Failed to create multipart: {}", e))?;
         let upload_id = multipart.upload_id().unwrap_or_default();
         
@@ -1906,7 +1922,7 @@ async fn stream_transfer_object(
             .map_err(|e| format!("Complete multipart failed: {}", e))?;
     } else {
         let body_bytes = body_stream.collect().await.map_err(|e| format!("Collect error: {}", e))?;
-        d_client.put_object().bucket(&d_bucket).key(&d_key).body(body_bytes.into_bytes().into()).send().await
+        d_client.put_object().bucket(&d_bucket).key(&d_key).content_type(&transfer_content_type).body(body_bytes.into_bytes().into()).send().await
             .map_err(|e| format!("Put failed: {}", e))?;
         
         let _ = window.emit("transfer-progress", TransferProgress {
@@ -2304,7 +2320,8 @@ async fn sync_folder(
                              tasks.push(async move {
                                  match aws_sdk_s3::primitives::ByteStream::from_path(&path_buf).await {
                                      Ok(stream) => {
-                                         match client.put_object().bucket(&bucket).key(&key).body(stream).send().await {
+                                         let content_type = mime_guess::from_path(&key).first_or_octet_stream().to_string();
+                                         match client.put_object().bucket(&bucket).key(&key).content_type(content_type).body(stream).send().await {
                                              Ok(_) => Ok(size as u64),
                                              Err(e) => Err(format!("Upload failed for {}: {}", key, e)),
                                          }
@@ -2576,10 +2593,15 @@ async fn upload_single_file_task(
         "size": size
     }));
 
+    let content_type = mime_guess::from_path(key)
+        .first_or_octet_stream()
+        .to_string();
+
     let result = client
         .put_object()
         .bucket(bucket)
         .key(key)
+        .content_type(content_type)
         .body(body.into())
         .send()
         .await;

@@ -39,6 +39,7 @@ sha2 = "0.10.9"
 rand = "0.10.0"
 hex = "0.4.3"
 directories = "6.0.0"
+mime_guess = "2.0"
 
 [features]
 # This feature is used for production builds or when `devPath` points to the filesystem
