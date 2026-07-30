@@ -2,8 +2,6 @@ name: Release Build (Windows, Linux & macOS)
 
 on:
   push:
-    tags:
-      - 'v*'
     branches:
       - main
   workflow_dispatch:
