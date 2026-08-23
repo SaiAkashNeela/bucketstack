@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — BucketStack</title>
+  <meta name="description" content="BucketStack Privacy Policy: local-first desktop application with zero data tracking, zero third-party telemetry, and hardware-encrypted local credentials." />
+  <link rel="canonical" href="https://www.bucketstack.app/privacy" />
+  <link rel="alternate" type="text/markdown" href="/llms.txt" title="LLM Documentation" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "BucketStack Privacy Policy",
+    "url": "https://www.bucketstack.app/privacy",
+    "mainEntity": {
+      "@type": "Organization",
+      "name": "BucketStack",
+      "url": "https://www.bucketstack.app"
+    }
+  }
+  </script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #0f172a; max-width: 800px; margin: 0 auto; padding: 40px 20px; background: #ffffff; }
+    h1, h2, h3 { color: #0f172a; font-weight: 700; }
+    a { color: #2563eb; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .header { border-bottom: 1px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
+    .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 20px 0; }
+    .footer { margin-top: 50px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #64748b; }
+    .nav { display: flex; gap: 16px; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <a href="/">← Home</a>
+    <a href="/about">About</a>
+    <a href="/developers">Developers</a>
+    <a href="/contact">Contact</a>
+    <a href="/terms">Terms</a>
+    <a href="/llms.txt">llms.txt</a>
+  </div>
+  <header class="header">
+    <h1>Privacy Policy</h1>
+    <p>Last Updated: August 2026. Your privacy and credentials belong entirely to you.</p>
+  </header>
+
+  <section>
+    <h2>1. Local-First Architecture</h2>
+    <p>BucketStack operates on a strictly local-first architectural model. When you use the BucketStack desktop client, all cloud operations (such as listing buckets, downloading objects, uploading files, generating presigned links, and syncing directories) occur directly between your personal computer and your chosen S3 storage endpoint.</p>
+    <p>There are no intermediary proxy servers, relay nodes, or centralized servers operated by BucketStack through which your data passes.</p>
+
+    <h2>2. Storage of S3 Credentials</h2>
+    <p>Your AWS Access Key IDs, Secret Access Keys, Session Tokens, and custom endpoint URLs are stored exclusively on your local device. BucketStack secures credentials using AES-256-GCM encryption hardware-bound to your machine identifier and OS security subsystems (macOS Keychain, Windows Credential Manager, Linux Secret Service). These keys are never transmitted to BucketStack or any third party.</p>
+
+    <h2>3. Telemetry and Analytics</h2>
+    <p>BucketStack desktop application does not collect user telemetry, behavioral tracking, or operational analytics. When checking for desktop updates, the app queries GitHub's public release API to determine if a newer version tag is available. On the website (bucketstack.app), privacy-friendly self-hosted aggregate page-view metrics are utilized with zero tracking cookies and full IP anonymization.</p>
+
+    <h2>4. Third-Party Cloud Providers</h2>
+    <p>When connecting BucketStack to third-party providers (such as Amazon Web Services, Cloudflare, Backblaze, Wasabi, or MinIO), your interactions are governed by the respective privacy policies and terms of those providers.</p>
+
+    <h2>5. Contact Us</h2>
+    <p>If you have any questions regarding this privacy policy, please contact us at <a href="mailto:akash@bucketstack.app">akash@bucketstack.app</a>.</p>
+  </section>
+
+  <footer class="footer">
+    <p>© 2026 BucketStack. Open source under MIT License. London, United Kingdom.</p>
+  </footer>
+</body>
+</html>

@@ -3,10 +3,14 @@
   "private": true,
   "version": "1.0.6",
   "type": "module",
+  "overrides": {
+    "fast-xml-parser": ">=5.3.4",
+    "dompurify": ">=3.4.14"
+  },
   "pnpm": {
     "overrides": {
       "fast-xml-parser": ">=5.3.4",
-      "dompurify": ">=3.4.12"
+      "dompurify": ">=3.4.14"
     }
   },
   "scripts": {
@@ -18,9 +22,9 @@
     "tauri:build": "tauri build"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1098.0",
-    "@aws-sdk/lib-storage": "^3.1098.0",
-    "@aws-sdk/s3-request-presigner": "^3.1098.0",
+    "@aws-sdk/client-s3": "^3.1116.0",
+    "@aws-sdk/lib-storage": "^3.1116.0",
+    "@aws-sdk/s3-request-presigner": "^3.1116.0",
     "@monaco-editor/react": "^4.7.0",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-clipboard-manager": "^2.3.2",
@@ -42,7 +46,7 @@
     "@types/node": "^22.20.1",
     "@vitejs/plugin-react": "^5.2.0",
     "autoprefixer": "^10.5.4",
-    "postcss": "^8.5.25",
+    "postcss": "^8.5.26",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.8.3",
     "vite": "^6.4.3"

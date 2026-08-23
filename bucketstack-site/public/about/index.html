@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About BucketStack — Open Source Native S3 File Manager</title>
+  <meta name="description" content="Learn about BucketStack, the open-source native desktop S3 bucket manager built with Rust and React for engineers and teams." />
+  <link rel="canonical" href="https://www.bucketstack.app/about" />
+  <link rel="alternate" type="text/markdown" href="/llms.txt" title="LLM Documentation" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "name": "About BucketStack",
+    "url": "https://www.bucketstack.app/about",
+    "mainEntity": {
+      "@type": "Organization",
+      "name": "BucketStack",
+      "url": "https://www.bucketstack.app",
+      "logo": "https://www.bucketstack.app/logo.png",
+      "founder": {
+        "@type": "Person",
+        "name": "Sai Akash Neela"
+      },
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "London",
+        "addressCountry": "GB"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "Customer Support",
+        "email": "akash@bucketstack.app",
+        "availableLanguage": ["English"]
+      },
+      "sameAs": [
+        "https://github.com/SaiAkashNeela/bucketstack",
+        "https://x.com/SaiAkashNeela"
+      ]
+    }
+  }
+  </script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #0f172a; max-width: 800px; margin: 0 auto; padding: 40px 20px; background: #ffffff; }
+    h1, h2, h3 { color: #0f172a; font-weight: 700; }
+    a { color: #2563eb; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .header { border-bottom: 1px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
+    .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 20px 0; }
+    .footer { margin-top: 50px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #64748b; }
+    .nav { display: flex; gap: 16px; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <a href="/">← Home</a>
+    <a href="/developers">Developers</a>
+    <a href="/contact">Contact</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/terms">Terms</a>
+    <a href="/llms.txt">llms.txt</a>
+  </div>
+  <header class="header">
+    <h1>About BucketStack</h1>
+    <p>A native, secure, and beautiful S3 bucket workstation built for developers and cloud practitioners.</p>
+  </header>
+
+  <section>
+    <h2>Our Mission</h2>
+    <p>BucketStack was created to solve a persistent frustration among developers, DevOps engineers, and cloud architects: managing object storage across multiple cloud providers shouldn't require clunky, sluggish legacy tools or navigating multiple disparate web consoles with bloated load times.</p>
+    <p>We built BucketStack from the ground up as a native desktop application powered by <strong>Rust and Tauri 2.0</strong>, paired with a modern React 19 interface. The result is a lightweight desktop app that starts in milliseconds, uses under 80MB of RAM, and handles complex multi-part transfers, live in-bucket code editing, and cross-cloud synchronization with native OS speed.</p>
+  </section>
+
+  <div class="card">
+    <h3>Core Design Principles</h3>
+    <ul>
+      <li><strong>Local-First Security:</strong> Your S3 access keys and secret tokens never touch third-party servers. All secrets are stored with hardware-bound AES-256-GCM encryption in your OS Keychain / Credential Manager.</li>
+      <li><strong>Universal S3 Compatibility:</strong> Built on the open S3 API standard, supporting AWS S3, Cloudflare R2, MinIO, Wasabi, Backblaze B2, and custom self-hosted endpoints.</li>
+      <li><strong>Developer Experience:</strong> Integrated Monaco code editor with syntax highlighting for 50+ programming languages, direct cloud-to-cloud streaming, on-the-fly zip/tar archive creation, and local SQLite audit logging.</li>
+      <li><strong>Open Source & Free:</strong> Fully transparent, community-driven, and licensed under the MIT License.</li>
+    </ul>
+  </div>
+
+  <section>
+    <h2>Open Source Community</h2>
+    <p>BucketStack is maintained by Sai Akash Neela and open-source contributors around the globe. Our source code, release manifests, and issue tracker are completely open on GitHub.</p>
+    <p>To view our roadmap, contribute code, or submit feature requests, visit the <a href="https://github.com/SaiAkashNeela/bucketstack">BucketStack GitHub Repository</a>.</p>
+  </section>
+
+  <footer class="footer">
+    <p>© 2026 BucketStack. Open source under MIT License. London, United Kingdom. <a href="/llms.txt">Agent LLM Reference</a></p>
+  </footer>
+</body>
+</html>

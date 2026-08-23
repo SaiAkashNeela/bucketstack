@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   Database,
@@ -20,7 +20,18 @@ import {
   Cpu,
   MousePointer2,
   Menu,
-  X
+  X,
+  ExternalLink,
+  ChevronRight,
+  HardDrive,
+  FolderSync,
+  FileCode2,
+  ShieldAlert,
+  ArrowRight,
+  Sparkles,
+  Layers,
+  SlidersHorizontal,
+  Bot
 } from 'lucide-react';
 import Button from './components/Button';
 import Section from './components/Section';
@@ -51,366 +62,659 @@ const LinuxLogo = ({ className }: { className?: string }) => (
 );
 
 function App() {
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const [downloadLinks, setDownloadLinks] = React.useState<any>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [downloadLinks, setDownloadLinks] = useState<{
+    version: string | null;
+    macos: string;
+    windows: string;
+    linux: string;
+  } | null>(null);
 
-  React.useEffect(() => {
-    releaseService.getDownloadLinks().then(setDownloadLinks);
+  useEffect(() => {
+    releaseService.getDownloadLinks().then((links) => {
+      setDownloadLinks(links);
+    });
   }, []);
+
+  const versionText = downloadLinks?.version ? `v${downloadLinks.version}` : 'v1.0.6';
 
   return (
     <HelmetProvider>
       <SEO />
-      <div className="min-h-screen flex flex-col bg-white">
-        {/* Navbar */}
-        <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+      <div className="min-h-screen flex flex-col bg-white text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-900">
+        
+        {/* Navigation Bar */}
+        <header className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80 transition-all">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <img src="/logo.png" alt="BucketStack" className="w-8 h-8 object-contain" />
-              <span className="font-bold text-lg tracking-tight text-gray-900">BucketStack</span>
-            </div>
-            <nav className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-sm font-medium text-gray-600 hover:text-gray-900">Features</a>
-              <a href="#demo" className="text-sm font-medium text-gray-600 hover:text-gray-900">Demo</a>
-              <a href="#performance" className="text-sm font-medium text-gray-600 hover:text-gray-900">Benchmarks</a>
-              <a href="#download" className="text-sm font-medium text-gray-600 hover:text-gray-900">Download</a>
-              <a href="#contact" className="text-sm font-medium text-gray-600 hover:text-gray-900">Contact</a>
-              <a href="https://github.com/SaiAkashNeela/bucketstack" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-900">
-                <Github className="w-5 h-5" />
+            <a href="/" className="flex items-center gap-2.5 group">
+              <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center p-1.5 shadow-sm group-hover:scale-105 transition-transform">
+                <img src="/logo.png" alt="BucketStack" className="w-full h-full object-contain" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-base tracking-tight text-slate-900 flex items-center gap-1.5">
+                  BucketStack
+                  <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded border border-slate-200/60">
+                    Rust
+                  </span>
+                </span>
+              </div>
+            </a>
+
+            <nav className="hidden md:flex items-center gap-7">
+              <a href="#features" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Features</a>
+              <a href="#demo" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Live Demo</a>
+              <a href="#benchmarks" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Benchmarks</a>
+              <a href="#security" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Security</a>
+              <a href="/developers" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1">
+                Developers
+                <span className="text-[10px] font-mono uppercase bg-blue-50 text-blue-700 px-1 py-0.2 rounded border border-blue-200/60">IPC</span>
+              </a>
+              <a href="/llms.txt" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1">
+                <Bot className="w-3.5 h-3.5 text-blue-600" />
+                <span>llms.txt</span>
+              </a>
+              <a href="#download" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Downloads</a>
+              
+              <div className="h-4 w-px bg-slate-200" />
+
+              <a
+                href="https://github.com/SaiAkashNeela/bucketstack"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-300/80 transition-all shadow-xs"
+              >
+                <Github className="w-4 h-4 text-slate-900" />
+                <span>Star on GitHub</span>
               </a>
             </nav>
-            <div className="md:hidden">
+
+            <div className="md:hidden flex items-center gap-2">
+              <a
+                href="https://github.com/SaiAkashNeela/bucketstack"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 text-slate-600 hover:text-slate-900"
+                aria-label="GitHub"
+              >
+                <Github className="w-5 h-5" />
+              </a>
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
+                className="p-2 text-slate-700 hover:text-slate-900 rounded-lg border border-slate-200"
+                aria-label="Toggle navigation"
               >
-                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             </div>
           </div>
 
-          {/* Mobile Menu Overlay */}
+          {/* Mobile Navigation Drawer */}
           {isMenuOpen && (
-            <div className="md:hidden absolute top-16 left-0 w-full bg-white border-b border-gray-100 shadow-lg p-4 flex flex-col space-y-4 animate-in slide-in-from-top-2">
-              <a href="#features" onClick={() => setIsMenuOpen(false)} className="text-base font-medium text-gray-600 hover:text-gray-900 py-2">Features</a>
-              <a href="#demo" onClick={() => setIsMenuOpen(false)} className="text-base font-medium text-gray-600 hover:text-gray-900 py-2">Demo</a>
-              <a href="#performance" onClick={() => setIsMenuOpen(false)} className="text-base font-medium text-gray-600 hover:text-gray-900 py-2">Benchmarks</a>
-              <a href="#download" onClick={() => setIsMenuOpen(false)} className="text-base font-medium text-gray-600 hover:text-gray-900 py-2">Download</a>
-              <a href="#contact" onClick={() => setIsMenuOpen(false)} className="text-base font-medium text-gray-600 hover:text-gray-900 py-2">Contact</a>
-              <a href="https://github.com/SaiAkashNeela/bucketstack" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2">
-                <Github className="w-5 h-5" />
-                <span>GitHub</span>
-              </a>
+            <div className="md:hidden bg-white border-b border-slate-200 shadow-xl px-4 py-6 flex flex-col gap-4 animate-in fade-in duration-150">
+              <a href="#features" onClick={() => setIsMenuOpen(false)} className="text-base font-medium text-slate-700 hover:text-slate-900 py-1">Features</a>
+              <a href="#demo" onClick={() => setIsMenuOpen(false)} className="text-base font-medium text-slate-700 hover:text-slate-900 py-1">Live Demo</a>
+              <a href="#benchmarks" onClick={() => setIsMenuOpen(false)} className="text-base font-medium text-slate-700 hover:text-slate-900 py-1">Benchmarks</a>
+              <a href="#security" onClick={() => setIsMenuOpen(false)} className="text-base font-medium text-slate-700 hover:text-slate-900 py-1">Security Architecture</a>
+              <a href="/developers" onClick={() => setIsMenuOpen(false)} className="text-base font-medium text-slate-700 hover:text-slate-900 py-1">Developer Portal & IPC</a>
+              <a href="/llms.txt" onClick={() => setIsMenuOpen(false)} className="text-base font-medium text-slate-700 hover:text-slate-900 py-1">Agent Knowledge (llms.txt)</a>
+              <a href="#download" onClick={() => setIsMenuOpen(false)} className="text-base font-medium text-slate-700 hover:text-slate-900 py-1">Downloads</a>
+              <a href="/about" onClick={() => setIsMenuOpen(false)} className="text-base font-medium text-slate-700 hover:text-slate-900 py-1">About</a>
+              <a href="/contact" onClick={() => setIsMenuOpen(false)} className="text-base font-medium text-slate-700 hover:text-slate-900 py-1">Contact Support</a>
             </div>
           )}
         </header>
 
         {/* Hero Section */}
-        <div className="relative pt-32 pb-16 overflow-hidden">
-          <Section className="!py-0 relative z-10">
-            <div className="text-center max-w-4xl mx-auto mb-16">
-              <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold mb-6 border border-blue-100">
-                <span className="flex h-2 w-2 rounded-full bg-blue-500 mr-2 animate-pulse"></span>
-                {downloadLinks?.version ? `v${downloadLinks.version}` : 'v1.0.1'}
-              </div>
-              <h1 className="text-5xl md:text-7xl font-bold text-gray-900 tracking-tight mb-8 leading-[1.1]">
-                Manage S3 Buckets <br className="hidden md:block" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Like a Pro.</span>
-              </h1>
-              <p className="text-xl md:text-2xl text-gray-600 mb-10 leading-relaxed max-w-2xl mx-auto">
-                A native, beautiful, and secure file manager for AWS S3, Cloudflare R2, MinIO, and more. <span className="text-gray-900 font-medium">No electrons harmed (Built with Rust).</span>
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 flex-wrap">
-                <a href={downloadLinks?.macos || '#'}>
-                  <Button size="lg" className="h-12 px-6 text-sm gap-2 shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 transition-all hover:-translate-y-0.5">
-                    <AppleLogo className="w-5 h-5 -mt-0.5" />
-                    <span>macOS</span>
-                  </Button>
-                </a>
-                <a href={downloadLinks?.windows || '#'}>
-                  <Button size="lg" variant="secondary" className="h-12 px-6 text-sm gap-2 border border-gray-200">
-                    <WindowsLogo className="w-5 h-5" />
-                    <span>Windows</span>
-                  </Button>
-                </a>
-                <a href={downloadLinks?.linux || '#'} target="_blank" rel="noopener noreferrer">
-                  <Button size="lg" variant="secondary" className="h-12 px-6 text-sm gap-2 border border-gray-200">
-                    <LinuxLogo className="w-5 h-5" />
-                    <span>Linux</span>
-                  </Button>
-                </a>
-              </div>
-              <p className="mt-6 text-sm text-gray-500">
-                Free & Open Source • All Platforms • Built with Rust
-              </p>
-            </div>
-
-            <div id="demo" className="w-full scroll-mt-24">
-              <InteractiveFileManager />
-            </div>
-
-          </Section>
-        </div>
-
-        {/* Trusted By & Providers */}
-        <Section className="bg-white border-y border-gray-100">
-          <div className="text-center mb-10">
-            <p className="text-sm font-semibold text-gray-400 uppercase tracking-widest">If it speaks S3, BucketStack can talk to it. Connect to any S3-compatible endpoint.</p>
-          </div>
-          <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8 opacity-70 hover:opacity-100 transition-all duration-500">
-            {['AWS S3', 'Cloudflare R2', 'Wasabi', 'MinIO', 'DigitalOcean', 'Backblaze B2', 'Railway'].map(p => (
-              <ProviderIcon key={p} name={p} />
-            ))}
-          </div>
-        </Section>
-
-        {/* Tray Window Feature */}
-        <Section className="bg-gray-50">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-            <div className="order-2 md:order-1">
-              <DemoTrayWindow />
-            </div>
-            <div className="order-1 md:order-2">
-              <div className="inline-flex items-center space-x-2 bg-indigo-50 rounded-full px-3 py-1 text-xs font-medium text-indigo-600 mb-6">
-                <LayoutGrid className="w-3 h-3" />
-                <span>Menu Bar App</span>
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Always one click away.</h2>
-              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                BucketStack lives in your menu bar. Quickly upload files, creating folders, or check recent uploads without breaking your flow.
-              </p>
-              <ul className="space-y-4">
-                {[
-                  "Drag & Drop uploads to menu bar icon",
-                  "Access recent files instantly",
-                  "Quick-switch between buckets",
-                  "Native performance & minimal RAM usage"
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </Section>
-
-        {/* Features Grid */}
-        <Section id="features">
-          <div className="max-w-3xl mx-auto text-center mb-20">
-            <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">Everything you need.</h2>
-            <p className="text-xl text-gray-600">Built for developers who demand power and simplicity.</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              { icon: RefreshCw, title: "Smart Sync", desc: "Bidirectional sync between local folders and S3 buckets with conflict resolution." },
-              { icon: Terminal, title: "Activity Log", desc: "Audit every action. Keep track of upgrades, downloads, and deletes locally." },
-              { icon: Globe, title: "Presigned Links", desc: "Generate secure, time-limited download links for any file with one click." },
-              { icon: Zap, title: "Multipart Uploads", desc: "Optimized for large files. Pause, resume, and parallelize uploads automatically." },
-              { icon: Trash2, title: "Safety First", desc: "Accidental deletion protection with a dedicated Trash folder for every bucket." },
-              { icon: Code2, title: "Developer Friendly", desc: "Edit text, JSON, and code files directly in S3 without downloading them." },
-              { icon: Activity, title: "Analytics", desc: "Visualize storage usage, file type distribution, and cost estimates." },
-              { icon: MousePointer2, title: "Native UI", desc: "Feels right at home on macOS. Supports Dark Mode, Retina displays, and gestures." },
-              { icon: Lock, title: "Encryption", desc: "Server-side encryption support. Your data stays safe at rest and in transit." },
-            ].map((feature, i) => (
-              <div key={i} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-blue-100 transition-all group">
-                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-colors duration-300">
-                  <feature.icon className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
+        <main className="flex-1">
+          <section className="relative pt-32 pb-16 md:pt-36 md:pb-24 overflow-hidden border-b border-slate-100 bg-radial-[at_top,_var(--tw-gradient-stops)] from-slate-50 via-white to-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center max-w-4xl mx-auto mb-14">
+                
+                {/* Release Pill */}
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-medium mb-8 shadow-sm">
+                  <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>BucketStack {versionText} is live</span>
+                  <span className="text-slate-400">•</span>
+                  <span className="text-slate-300">Tauri 2.0 + Rust Engine</span>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-3">{feature.title}</h3>
-                <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
+
+                {/* Primary Headline */}
+                <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-slate-950 tracking-tight leading-[1.08] mb-6">
+                  Manage S3 Buckets <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700">
+                    Like a Native Pro.
+                  </span>
+                </h1>
+
+                {/* Subtitle */}
+                <p className="text-lg sm:text-xl text-slate-600 mb-10 leading-relaxed max-w-2xl mx-auto font-normal">
+                  A high-speed desktop workstation for <strong className="text-slate-900 font-semibold">AWS S3, Cloudflare R2, MinIO, Wasabi, and Backblaze B2</strong>. Built in Rust with hardware-bound AES-256 encryption and built-in Monaco code editor.
+                </p>
+
+                {/* Download CTAs */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 mb-8">
+                  <a href={downloadLinks?.macos || '#'} className="w-full sm:w-auto">
+                    <Button size="lg" className="w-full sm:w-auto h-12 px-6 text-sm gap-2.5 bg-slate-900 text-white hover:bg-slate-800 shadow-md transition-all hover:-translate-y-0.5">
+                      <AppleLogo className="w-4 h-4" />
+                      <span>Download for macOS</span>
+                    </Button>
+                  </a>
+                  <a href={downloadLinks?.windows || '#'} className="w-full sm:w-auto">
+                    <Button size="lg" variant="secondary" className="w-full sm:w-auto h-12 px-6 text-sm gap-2.5 border border-slate-300 text-slate-800 hover:bg-slate-100 transition-all">
+                      <WindowsLogo className="w-4 h-4 text-blue-600" />
+                      <span>Windows (x64)</span>
+                    </Button>
+                  </a>
+                  <a href={downloadLinks?.linux || '#'} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+                    <Button size="lg" variant="secondary" className="w-full sm:w-auto h-12 px-6 text-sm gap-2.5 border border-slate-300 text-slate-800 hover:bg-slate-100 transition-all">
+                      <LinuxLogo className="w-4 h-4 text-amber-600" />
+                      <span>Linux (.deb / AppImage)</span>
+                    </Button>
+                  </a>
+                </div>
+
+                {/* Trust & Spec Subtitle */}
+                <div className="flex flex-wrap items-center justify-center gap-y-2 gap-x-6 text-xs text-slate-500 font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" /> Zero Telemetry / Local-First
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Cpu className="w-4 h-4 text-blue-600" /> &lt;80MB RAM Footprint
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Lock className="w-4 h-4 text-indigo-600" /> AES-256-GCM Vault
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Code2 className="w-4 h-4 text-purple-600" /> MIT Open Source
+                  </span>
+                </div>
               </div>
-            ))}
-          </div>
-        </Section>
 
-        {/* Performance Section */}
-        <Section id="performance" className="bg-gray-900 text-white rounded-3xl mx-4 my-8 !py-20 md:mx-8">
-          <div className="max-w-4xl mx-auto text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">Blazing Fast. Rust Powered.</h2>
-            <p className="text-gray-400 text-lg">We ditched Electron for a lightweight, native experience.</p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-gray-800">
-            <div>
-              <div className="text-4xl font-bold text-blue-400 mb-2">&lt; 2s</div>
-              <div className="text-sm text-gray-500 uppercase tracking-wider font-semibold">Startup Time</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-green-400 mb-2">~50MB</div>
-              <div className="text-sm text-gray-500 uppercase tracking-wider font-semibold">RAM Usage</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-purple-400 mb-2">100+</div>
-              <div className="text-sm text-gray-500 uppercase tracking-wider font-semibold">MB/s Upload</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-orange-400 mb-2">0</div>
-              <div className="text-sm text-gray-500 uppercase tracking-wider font-semibold">Trackers</div>
-            </div>
-          </div>
-
-          <div className="mt-16 flex justify-center">
-            <div className="inline-flex items-center gap-3 bg-gray-800/50 rounded-full px-6 py-3 border border-gray-700">
-              <Cpu className="w-5 h-5 text-gray-400" />
-              <span className="text-gray-300 font-mono text-sm">Built with Tauri + React + Rust</span>
-            </div>
-          </div>
-        </Section>
-
-        {/* Security Section (Defense in Depth) */}
-        <Section className="bg-white">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-            <div>
-              <div className="inline-flex items-center space-x-2 bg-green-50 rounded-full px-3 py-1 text-xs font-medium text-green-700 mb-6">
-                <ShieldCheck className="w-3 h-3" />
-                <span>Zero-Trust Architecture</span>
+              {/* Interactive File Explorer Live Demo */}
+              <div id="demo" className="w-full scroll-mt-24 mt-4">
+                <div className="text-center mb-4">
+                  <span className="text-xs font-mono font-semibold uppercase tracking-wider text-slate-400 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                    Interactive Live Sandbox — Click folders, edit files, switch views
+                  </span>
+                </div>
+                <InteractiveFileManager />
               </div>
-              <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-8">Secure by Design.</h2>
-              <p className="text-xl text-gray-600 mb-8">Your credentials are yours. They never touch our servers because we don't have any.</p>
 
-              <div className="space-y-6">
-                {[
-                  { title: "Secure Machine Storage", desc: "Credentials stored in an AES-256-GCM encrypted database, bound to your machine's unique identifier." },
-                  { title: "End-to-End Encryption", desc: "Direct connection to AWS/S3. No middleman proxies." },
-                  { title: "Sandboxed Environment", desc: "Strict OS-level sandboxing prevents unauthorized access." }
-                ].map((item, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                      <Lock className="w-4 h-4 text-green-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-gray-900">{item.title}</h4>
-                      <p className="text-sm text-gray-500 mt-1">{item.desc}</p>
-                    </div>
+            </div>
+          </section>
+
+          {/* Supported Cloud Providers Strip */}
+          <section className="py-12 bg-slate-50/70 border-b border-slate-200/80">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-8">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                  Universal S3 Standard • Zero Vendor Lock-in
+                </p>
+              </div>
+              <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-6 opacity-85 hover:opacity-100 transition-opacity">
+                {['AWS S3', 'Cloudflare R2', 'Wasabi', 'MinIO', 'DigitalOcean', 'Backblaze B2', 'Railway'].map((provider) => (
+                  <div key={provider} className="flex items-center gap-2">
+                    <ProviderIcon name={provider} />
                   </div>
                 ))}
               </div>
             </div>
-            <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100 relative overflow-hidden">
-              {/* Abstract Code/Security illustration */}
-              <div className="font-mono text-xs text-gray-400 space-y-2">
-                <p><span className="text-purple-600">const</span> <span className="text-blue-600">credentials</span> = <span className="text-purple-600">await</span> secureStorage.<span className="text-yellow-600">get</span>(<span className="text-green-600">"aws_access_key"</span>);</p>
-                <p className="pl-4"><span className="text-gray-500">// Credentials retrieved securely from OS</span></p>
-                <p><span className="text-purple-600">const</span> <span className="text-blue-600">s3</span> = <span className="text-purple-600">new</span> S3Client({`{`}</p>
-                <p className="pl-4">region: <span className="text-green-600">"us-east-1"</span>,</p>
-                <p className="pl-4">credentials: credentials</p>
-                <p>{`}`});</p>
-                <p className="text-gray-500">// Direct connection established</p>
+          </section>
+
+          {/* Core Feature Matrix */}
+          <section id="features" className="py-20 md:py-28 bg-white border-b border-slate-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="max-w-3xl mx-auto text-center mb-20">
+                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full mb-4 border border-blue-100">
+                  <Sparkles className="w-3.5 h-3.5" /> Capabilities
+                </div>
+                <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight mb-5">
+                  Built for Engineers Who Live in Object Storage.
+                </h2>
+                <p className="text-lg text-slate-600 leading-relaxed">
+                  Every feature is tuned for speed, reliability, and security across multi-cloud environments.
+                </p>
               </div>
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <Lock size={200} />
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[
+                  {
+                    icon: Code2,
+                    title: "In-Bucket Monaco Editor",
+                    desc: "Edit JSON, YAML, configs, code, and markdown directly inside S3 buckets without downloading. Syntax highlighted with 50+ languages."
+                  },
+                  {
+                    icon: RefreshCw,
+                    title: "Cloud-to-Cloud Streaming",
+                    desc: "Stream files directly between AWS S3, Cloudflare R2, and MinIO without writing temporary files to your local disk."
+                  },
+                  {
+                    icon: FolderSync,
+                    title: "Smart Background Sync",
+                    desc: "Bi-directional folder synchronization running in the background with conflict resolution and automated scheduled intervals."
+                  },
+                  {
+                    icon: Terminal,
+                    title: "SQLite Activity Audit",
+                    desc: "Every upload, download, move, rename, and delete is recorded in an embedded SQLite database. Search and export audit trails to CSV/JSON."
+                  },
+                  {
+                    icon: Globe,
+                    title: "Presigned Link Generator",
+                    desc: "Create secure, temporary download URLs with custom expiry windows (15m, 1h, 24h, 7d) with a single right-click."
+                  },
+                  {
+                    icon: Zap,
+                    title: "Parallel Multipart Transfers",
+                    desc: "High-throughput chunked uploads for multi-gigabyte datasets with automatic retry and pause/resume capabilities."
+                  },
+                  {
+                    icon: Trash2,
+                    title: "Soft Delete Trash Bin",
+                    desc: "Accidental deletion protection. Deleted objects move to a soft-delete trash partition with instant one-click restoration."
+                  },
+                  {
+                    icon: HardDrive,
+                    title: "On-the-Fly Archiving",
+                    desc: "Compress multiple remote objects into .zip or .tar.gz archives directly inside your S3 bucket without local downloads."
+                  },
+                  {
+                    icon: Activity,
+                    title: "Storage Analytics",
+                    desc: "Interactive visual charts for bucket size distribution, MIME type breakdowns, object counts, and storage cost estimations."
+                  }
+                ].map((feature, i) => (
+                  <div
+                    key={i}
+                    className="p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-blue-200 hover:bg-white hover:shadow-lg transition-all duration-200 group"
+                  >
+                    <div className="w-12 h-12 bg-white rounded-xl border border-slate-200 flex items-center justify-center mb-6 shadow-xs group-hover:bg-blue-600 group-hover:border-blue-600 transition-colors">
+                      <feature.icon className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 mb-2.5">{feature.title}</h3>
+                    <p className="text-sm text-slate-600 leading-relaxed">{feature.desc}</p>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        </Section>
+          </section>
 
-        {/* Download CTA */}
-        <Section id="download" className="bg-gray-50 border-t border-gray-200">
-          <div className="text-center max-w-4xl mx-auto">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">Ready to take control?</h2>
-            <p className="text-xl text-gray-500 mb-12">Start using BucketStack today.</p>
-
-            <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-16">
-              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 flex flex-col items-center w-full md:w-64 hover:border-blue-400 hover:shadow-md transition-all">
-                <AppleLogo className="w-12 h-12 mb-6 text-gray-900" />
-                <h3 className="font-bold text-lg mb-1">macOS</h3>
-                <p className="text-xs text-gray-500 mb-6">Universal (Apple Silicon/Intel)</p>
-                <a href={downloadLinks?.macos || '#'} className="w-full">
-                  <Button className="w-full">Download DMG</Button>
-                </a>
-              </div>
-              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 flex flex-col items-center w-full md:w-64 hover:border-blue-400 hover:shadow-md transition-all">
-                <WindowsLogo className="w-12 h-12 mb-6 text-blue-600" />
-                <h3 className="font-bold text-lg mb-1">Windows</h3>
-                <p className="text-xs text-gray-500 mb-6">Windows 10/11 (x64)</p>
-                <a href={downloadLinks?.windows || '#'} className="w-full">
-                  <Button variant="secondary" className="w-full">Download EXE</Button>
-                </a>
-              </div>
-              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 flex flex-col items-center w-full md:w-64 hover:border-blue-400 hover:shadow-md transition-all">
-                <LinuxLogo className="w-12 h-12 mb-6 text-orange-500" />
-                <h3 className="font-bold text-lg mb-1">Linux</h3>
-                <p className="text-xs text-gray-500 mb-6">AppImage / RPM / Deb Available</p>
-                <a href={downloadLinks?.linux || '#'} target="_blank" rel="noopener noreferrer" className="w-full">
-                  <Button variant="secondary" className="w-full">See Releases</Button>
-                </a>
+          {/* Menu Bar / Tray Window Spotlight */}
+          <section className="py-20 md:py-28 bg-slate-900 text-white overflow-hidden">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="grid md:grid-cols-2 gap-16 items-center">
+                <div className="order-2 md:order-1 flex justify-center">
+                  <div className="w-full max-w-sm">
+                    <DemoTrayWindow />
+                  </div>
+                </div>
+                <div className="order-1 md:order-2">
+                  <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 rounded-full px-3 py-1 text-xs font-medium text-blue-400 mb-6">
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span>System Tray Integration</span>
+                  </div>
+                  <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-6">
+                    Always One Click Away in Your Menu Bar.
+                  </h2>
+                  <p className="text-slate-300 text-lg mb-8 leading-relaxed">
+                    BucketStack docks unobtrusively in your macOS menu bar or Windows/Linux system tray. Drag files directly onto the tray icon to upload without opening the full workstation window.
+                  </p>
+                  
+                  <div className="space-y-4 font-medium text-sm text-slate-200">
+                    {[
+                      "Instant drag-and-drop file upload to active bucket",
+                      "Live transfer progress and background sync monitors",
+                      "Quick bucket switching and recently uploaded files list",
+                      "Runs silently in background with <50MB resident memory"
+                    ].map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </Section>
+          </section>
 
-        {/* Contact Section */}
-        <Section id="contact" className="bg-gradient-to-br from-blue-50 to-indigo-50">
-          <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">Have a question?</h2>
-            <p className="text-xl text-gray-600 mb-8">
-              We'd love to hear from you. Have feedback, found a bug, or just want to say hi?
-            </p>
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 max-w-sm mx-auto">
-              <p className="text-gray-600 mb-4">Email us at:</p>
-              <a
-                href="mailto:akash@bucketstack.app"
-                className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all"
-              >
-                akash@bucketstack.app
-              </a>
-              <p className="text-gray-500 text-sm mt-6">
-                We'll get back to you as soon as possible.
+          {/* Benchmarks & Performance Section */}
+          <section id="benchmarks" className="py-20 md:py-28 bg-white border-b border-slate-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="max-w-3xl mx-auto text-center mb-16">
+                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full mb-4 border border-emerald-200">
+                  <Zap className="w-3.5 h-3.5" /> Benchmarks
+                </div>
+                <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight mb-5">
+                  Native Rust vs. Electron.
+                </h2>
+                <p className="text-lg text-slate-600">
+                  Ditching Chromium and Electron wrappers means lighter memory, zero bloat, and instantaneous startup.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto text-center">
+                <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                  <div className="text-3xl sm:text-4xl font-extrabold text-blue-600 mb-2 font-mono">&lt; 1.5s</div>
+                  <div className="text-xs uppercase tracking-wider font-bold text-slate-600">Startup Time</div>
+                  <p className="text-[11px] text-slate-400 mt-1">vs 6-10s Electron apps</p>
+                </div>
+                <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                  <div className="text-3xl sm:text-4xl font-extrabold text-emerald-600 mb-2 font-mono">~50 MB</div>
+                  <div className="text-xs uppercase tracking-wider font-bold text-slate-600">RAM Footprint</div>
+                  <p className="text-[11px] text-slate-400 mt-1">vs 400MB+ Chromium</p>
+                </div>
+                <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                  <div className="text-3xl sm:text-4xl font-extrabold text-purple-600 mb-2 font-mono">100%</div>
+                  <div className="text-xs uppercase tracking-wider font-bold text-slate-600">Rust AWS SigV4</div>
+                  <p className="text-[11px] text-slate-400 mt-1">Native compiled crypto</p>
+                </div>
+                <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                  <div className="text-3xl sm:text-4xl font-extrabold text-amber-600 mb-2 font-mono">0</div>
+                  <div className="text-xs uppercase tracking-wider font-bold text-slate-600">Trackers / Telemetry</div>
+                  <p className="text-[11px] text-slate-400 mt-1">100% private & local</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Security & Zero-Trust Architecture */}
+          <section id="security" className="py-20 md:py-28 bg-slate-50/80 border-b border-slate-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="grid md:grid-cols-2 gap-16 items-center">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full mb-4 border border-emerald-200">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Hardware-Bound Cryptography
+                  </div>
+                  <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight mb-6">
+                    Zero-Trust Security by Design.
+                  </h2>
+                  <p className="text-lg text-slate-600 mb-8 leading-relaxed">
+                    Cloud credentials must never leak. BucketStack connects directly to your S3 endpoints over TLS without passing data through any proxy servers or external infrastructure.
+                  </p>
+
+                  <div className="space-y-6">
+                    <div className="flex gap-4">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0 border border-emerald-200">
+                        <Lock className="w-4 h-4 text-emerald-700" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-base">AES-256-GCM OS Hardware Keyring</h3>
+                        <p className="text-sm text-slate-600 mt-1">
+                          Secrets are encrypted using machine identifier derivation linked to macOS Keychain, Windows Credential Manager, or Linux Secret Service.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4">
+                      <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center shrink-0 border border-blue-200">
+                        <ServerOff className="w-4 h-4 text-blue-700" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-base">Direct Peer-to-Endpoint Connectivity</h3>
+                        <p className="text-sm text-slate-600 mt-1">
+                          No intermediate relay servers or hosted proxies. All AWS SigV4 authorization signatures are calculated locally on your machine.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4">
+                      <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center shrink-0 border border-purple-200">
+                        <Terminal className="w-4 h-4 text-purple-700" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-base">Local SQLite Audit Database</h3>
+                        <p className="text-sm text-slate-600 mt-1">
+                          Activity logs stay completely on your device in an indexed SQLite database, exportable anytime to CSV or JSON.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Code Security Block */}
+                <div className="bg-slate-950 rounded-2xl p-6 md:p-8 border border-slate-800 shadow-2xl text-slate-300 font-mono text-xs leading-relaxed relative overflow-hidden">
+                  <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-800 text-slate-500">
+                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                    <span className="text-[11px] ml-2 text-slate-400">src/security.rs • AES-256-GCM Vault</span>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-slate-500">// Machine-bound credential derivation</p>
+                    <p><span className="text-purple-400">let</span> machine_key = security::derive_machine_key()?;</p>
+                    <p><span className="text-purple-400">let</span> cipher = Aes256Gcm::new(&amp;machine_key);</p>
+                    <p className="text-slate-500 mt-3">// Decrypt credentials in-memory for SigV4</p>
+                    <p><span className="text-purple-400">let</span> credentials = cipher.decrypt(nonce, secret_bytes)?;</p>
+                    <p><span className="text-purple-400">let</span> client = aws_sdk_s3::Client::new(&amp;config);</p>
+                    <p className="text-emerald-400 mt-3">// Direct TLS handshake to S3 endpoint (no proxy)</p>
+                    <p><span className="text-blue-400">let</span> response = client.list_objects_v2().send().<span className="text-purple-400">await</span>?;</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Developer & Agent Integration Spotlight */}
+          <section className="py-20 bg-white border-b border-slate-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="bg-slate-900 rounded-3xl p-8 md:p-14 text-white">
+                <div className="grid lg:grid-cols-2 gap-12 items-center">
+                  <div>
+                    <div className="inline-flex items-center gap-2 bg-blue-500/20 border border-blue-400/30 rounded-full px-3 py-1 text-xs font-semibold text-blue-300 mb-6">
+                      <Bot className="w-3.5 h-3.5" />
+                      <span>AI Agents &amp; Automation</span>
+                    </div>
+                    <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">
+                      LLM-Ready &amp; Built for Automation.
+                    </h2>
+                    <p className="text-slate-300 text-base mb-6 leading-relaxed">
+                      BucketStack features first-class documentation for LLMs and AI agents via standardized <code className="text-blue-300 font-mono">/llms.txt</code> and <code className="text-blue-300 font-mono">/llms-full.txt</code> endpoints. Explore the full Tauri typed IPC command surface in our developer portal.
+                    </p>
+                    <div className="flex flex-wrap gap-4">
+                      <a
+                        href="/developers"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-all shadow-md"
+                      >
+                        <span>Open Developer Portal</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </a>
+                      <a
+                        href="/llms.txt"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-sm font-semibold transition-all"
+                      >
+                        <Bot className="w-4 h-4 text-blue-400" />
+                        <span>View /llms.txt</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-950 rounded-2xl p-6 border border-slate-800 font-mono text-xs text-slate-300 space-y-2.5">
+                    <div className="text-slate-500">// Tauri typed IPC invoke interface</div>
+                    <div><span className="text-purple-400">import</span> &#123; invoke &#125; <span className="text-purple-400">from</span> <span className="text-emerald-400">'@tauri-apps/api/core'</span>;</div>
+                    <div className="pt-2"><span className="text-slate-500">// Stream between providers (AWS -&gt; Cloudflare R2)</span></div>
+                    <div><span className="text-purple-400">await</span> invoke(<span className="text-amber-300">'stream_transfer_object'</span>, &#123;</div>
+                    <div className="pl-4">srcAccount, srcBucket: <span className="text-emerald-400">'source-aws'</span>, srcKey,</div>
+                    <div className="pl-4">dstAccount, dstBucket: <span className="text-emerald-400">'destination-r2'</span>, dstKey</div>
+                    <div>&#125;);</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Download CTA Hub */}
+          <section id="download" className="py-20 md:py-28 bg-slate-50 border-b border-slate-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
+                Download BucketStack Today.
+              </h2>
+              <p className="text-lg text-slate-600 mb-14 max-w-xl mx-auto">
+                Free, open source, and available for all major operating systems.
+              </p>
+
+              <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-12">
+                {/* macOS Card */}
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all flex flex-col items-center">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-6">
+                    <AppleLogo className="w-8 h-8 text-slate-900" />
+                  </div>
+                  <h3 className="font-bold text-xl text-slate-900 mb-1">macOS</h3>
+                  <p className="text-xs text-slate-500 mb-6">Universal Binary (Apple Silicon &amp; Intel)</p>
+                  <a href={downloadLinks?.macos || '#'} className="w-full mt-auto">
+                    <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white">Download DMG</Button>
+                  </a>
+                </div>
+
+                {/* Windows Card */}
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all flex flex-col items-center">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mb-6">
+                    <WindowsLogo className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <h3 className="font-bold text-xl text-slate-900 mb-1">Windows</h3>
+                  <p className="text-xs text-slate-500 mb-6">Windows 10 / 11 (64-bit EXE &amp; MSI)</p>
+                  <a href={downloadLinks?.windows || '#'} className="w-full mt-auto">
+                    <Button variant="secondary" className="w-full border border-slate-300 hover:bg-slate-100">Download EXE</Button>
+                  </a>
+                </div>
+
+                {/* Linux Card */}
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all flex flex-col items-center">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center mb-6">
+                    <LinuxLogo className="w-8 h-8 text-amber-600" />
+                  </div>
+                  <h3 className="font-bold text-xl text-slate-900 mb-1">Linux</h3>
+                  <p className="text-xs text-slate-500 mb-6">AppImage, Debian (.deb), RedHat (.rpm)</p>
+                  <a href={downloadLinks?.linux || '#'} target="_blank" rel="noopener noreferrer" className="w-full mt-auto">
+                    <Button variant="secondary" className="w-full border border-slate-300 hover:bg-slate-100">All Linux Formats</Button>
+                  </a>
+                </div>
+              </div>
+
+              <p className="text-sm text-slate-500">
+                Automated in-app updates supported across all platforms via Minisign cryptographic verification.
               </p>
             </div>
-          </div>
-        </Section>
+          </section>
 
-        {/* Footer */}
-        <footer className="bg-white py-16 border-t border-gray-200">
+          {/* Contact Section */}
+          <section id="contact" className="py-20 bg-white">
+            <div className="max-w-3xl mx-auto px-4 text-center">
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-4">
+                Questions, Feedback, or Bug Reports?
+              </h2>
+              <p className="text-slate-600 text-lg mb-8 leading-relaxed">
+                BucketStack is actively maintained. Whether you found an issue, need enterprise guidance, or want to contribute, we'd love to connect.
+              </p>
+              <div className="inline-flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a
+                  href="mailto:akash@bucketstack.app"
+                  className="px-6 py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-all shadow-sm hover:-translate-y-0.5"
+                >
+                  akash@bucketstack.app
+                </a>
+                <a
+                  href="https://github.com/SaiAkashNeela/bucketstack/issues"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 bg-slate-100 text-slate-800 rounded-xl font-semibold hover:bg-slate-200 border border-slate-300/80 transition-all"
+                >
+                  GitHub Issues &amp; Discussions
+                </a>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        {/* Comprehensive Trust Footer */}
+        <footer className="bg-slate-50 border-t border-slate-200/80 py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-4 gap-8 mb-12">
-              <div className="col-span-1 md:col-span-2">
-                <div className="flex items-center space-x-2 mb-4">
-                  <img src="/logo.png" alt="BucketStack" className="w-6 h-6 object-contain" />
-                  <span className="font-bold text-xl text-gray-900">BucketStack</span>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
+              
+              <div className="col-span-2">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-md bg-slate-900 flex items-center justify-center p-1">
+                    <img src="/logo.png" alt="BucketStack" className="w-full h-full object-contain" />
+                  </div>
+                  <span className="font-bold text-lg text-slate-900">BucketStack</span>
                 </div>
-                <p className="text-gray-500 max-w-sm mb-6">
-                  The modern, native file manager for your object storage. Secure, fast, and open source.
+                <p className="text-sm text-slate-500 max-w-sm mb-6 leading-relaxed">
+                  The native, open-source S3 desktop workstation for engineers and teams. Fast, secure, and vendor-neutral.
                 </p>
-                <div className="flex gap-4">
-                  <a href="https://github.com/SaiAkashNeela/bucketstack" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-600"><Github size={20} /></a>
-                  <a href="https://x.com/TheSaiAkash" className="text-gray-400 hover:text-gray-600">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+                <div className="flex items-center gap-3">
+                  <a
+                    href="https://github.com/SaiAkashNeela/bucketstack"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 transition-colors"
+                    aria-label="GitHub Repository"
+                  >
+                    <Github className="w-5 h-5" />
+                  </a>
+                  <a
+                    href="https://x.com/SaiAkashNeela"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 transition-colors"
+                    aria-label="X / Twitter"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="w-4 h-4 fill-current">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                     </svg>
                   </a>
                 </div>
               </div>
+
               <div>
-                <h4 className="font-bold text-gray-900 mb-4">Product</h4>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li><a href="#features" className="hover:text-blue-600">Features</a></li>
-                  <li><a href="#security" className="hover:text-blue-600">Security</a></li>
-                  <li><a href="#download" className="hover:text-blue-600">Download</a></li>
-                  <li><a href="https://github.com/SaiAkashNeela/bucketstack/releases" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600">Changelog</a></li>
+                <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 mb-4">Product</h4>
+                <ul className="space-y-2.5 text-sm text-slate-600">
+                  <li><a href="#features" className="hover:text-slate-900">Features</a></li>
+                  <li><a href="#demo" className="hover:text-slate-900">Interactive Demo</a></li>
+                  <li><a href="#benchmarks" className="hover:text-slate-900">Benchmarks</a></li>
+                  <li><a href="#security" className="hover:text-slate-900">Security Vault</a></li>
+                  <li><a href="#download" className="hover:text-slate-900">Downloads</a></li>
                 </ul>
               </div>
+
               <div>
-                <h4 className="font-bold text-gray-900 mb-4">Legal</h4>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li><a href="https://github.com/SaiAkashNeela/bucketstack/blob/main/LICENSE.md" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600">License</a></li>
+                <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 mb-4">Developers &amp; AI</h4>
+                <ul className="space-y-2.5 text-sm text-slate-600">
+                  <li><a href="/developers" className="hover:text-slate-900">Developer Portal</a></li>
+                  <li><a href="/llms.txt" className="hover:text-slate-900">llms.txt</a></li>
+                  <li><a href="/llms-full.txt" className="hover:text-slate-900">llms-full.txt</a></li>
+                  <li><a href="https://github.com/SaiAkashNeela/bucketstack/releases" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900">Changelog</a></li>
+                  <li><a href="https://github.com/SaiAkashNeela/bucketstack" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900">Source Code</a></li>
                 </ul>
               </div>
+
+              <div>
+                <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 mb-4">Trust &amp; Legal</h4>
+                <ul className="space-y-2.5 text-sm text-slate-600">
+                  <li><a href="/about" className="hover:text-slate-900">About</a></li>
+                  <li><a href="/contact" className="hover:text-slate-900">Contact</a></li>
+                  <li><a href="/privacy" className="hover:text-slate-900">Privacy Policy</a></li>
+                  <li><a href="/terms" className="hover:text-slate-900">Terms of Service</a></li>
+                  <li><a href="https://github.com/SaiAkashNeela/bucketstack/blob/main/LICENSE.md" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900">MIT License</a></li>
+                </ul>
+              </div>
+
             </div>
 
-            <div className="pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-sm text-gray-500">© {new Date().getFullYear()} BucketStack. Open Source under MIT License.</p>
-              <a href="https://buymeacoffee.com/akash.neela" className="flex items-center gap-2 px-4 py-2 bg-yellow-50 text-yellow-700 rounded-full text-sm font-medium hover:bg-yellow-100 transition-colors">
-                <Coffee size={16} />
+            <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+              <p>© 2026 BucketStack. Free &amp; Open Source under MIT License. London, United Kingdom.</p>
+              <a
+                href="https://buymeacoffee.com/akash.neela"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-amber-50 text-amber-900 rounded-full font-medium border border-amber-200 hover:bg-amber-100 transition-colors"
+              >
+                <Coffee size={14} className="text-amber-700" />
                 <span>Buy me a coffee</span>
               </a>
             </div>
           </div>
         </footer>
+
       </div>
     </HelmetProvider>
   );

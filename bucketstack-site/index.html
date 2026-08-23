@@ -5,18 +5,18 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/logo.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BucketStack - Native S3 File Manager for macOS, Windows & Linux</title>
+  <title>BucketStack — Native S3 File Manager for macOS, Windows & Linux</title>
   <meta name="description"
-    content="BucketStack is a native S3 file manager built with Rust. Manage your S3 buckets like a pro with an intuitive interface. Free, open-source, and available for macOS, Windows, and Linux." />
+    content="BucketStack is a free, open-source native S3 desktop file manager built with Rust & React. Manage AWS S3, Cloudflare R2, MinIO, Wasabi, and Backblaze B2 with local hardware-encrypted security and built-in Monaco editor." />
   <meta name="keywords"
-    content="S3, file manager, AWS, cloud storage, Rust, native app, desktop application, macOS, Windows, Linux, bucket management" />
+    content="S3, file manager, AWS S3, Cloudflare R2, MinIO, Wasabi, Backblaze B2, cloud storage, Rust, Tauri, React, desktop app, macOS, Windows, Linux, bucket management, open source" />
   <meta name="author" content="BucketStack" />
   <meta name="robots" content="index, follow" />
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://www.bucketstack.app/" />
-  <meta property="og:title" content="BucketStack - Native S3 File Manager" />
+  <meta property="og:title" content="BucketStack — Native S3 File Manager" />
   <meta property="og:description"
     content="Manage your S3 buckets like a pro. Free, open-source desktop app for macOS, Windows & Linux." />
   <meta property="og:image" content="https://www.bucketstack.app/logo.png" />
@@ -25,41 +25,72 @@
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image" />
   <meta property="twitter:url" content="https://www.bucketstack.app/" />
-  <meta property="twitter:title" content="BucketStack - Native S3 File Manager" />
-  <meta property="twitter:description" content="Manage your S3 buckets like a pro. Free, open-source desktop app." />
+  <meta property="twitter:title" content="BucketStack — Native S3 File Manager" />
+  <meta property="twitter:description"
+    content="Manage your S3 buckets like a pro. Free, open-source desktop app for macOS, Windows & Linux." />
+  <meta property="twitter:image" content="https://www.bucketstack.app/logo.png" />
 
-  <!-- Canonical -->
+  <!-- Canonical and Alternate Links for AI & LLMs -->
   <link rel="canonical" href="https://www.bucketstack.app/" />
+  <link rel="alternate" type="text/markdown" href="/llms.txt" title="BucketStack LLM Context" />
+  <link rel="alternate" type="text/plain" href="/llms-full.txt" title="BucketStack Full LLM Documentation" />
 
-  <!-- Structured Data (JSON-LD) -->
+  <!-- Structured Data: Organization & SoftwareApplication JSON-LD -->
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "BucketStack",
-      "description": "Native S3 file manager built with Rust for macOS, Windows, and Linux",
-      "url": "https://www.bucketstack.app",
-      "applicationCategory": "UtilityApplication",
-      "operatingSystem": ["macOS", "Windows", "Linux"],
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
-      "author": {
-        "@type": "Organization",
-        "name": "BucketStack",
-        "contactPoint": {
-          "@type": "ContactPoint",
-          "contactType": "Customer Service",
-          "email": "akash@bucketstack.app"
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://www.bucketstack.app/#organization",
+          "name": "BucketStack",
+          "url": "https://www.bucketstack.app",
+          "logo": "https://www.bucketstack.app/logo.png",
+          "description": "Open source native desktop S3 bucket management and multi-cloud storage developer tools.",
+          "founder": {
+            "@type": "Person",
+            "name": "Sai Akash Neela"
+          },
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "London",
+            "addressCountry": "GB"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "Customer Support",
+            "email": "akash@bucketstack.app",
+            "availableLanguage": ["English"]
+          },
+          "sameAs": [
+            "https://github.com/SaiAkashNeela/bucketstack",
+            "https://x.com/SaiAkashNeela"
+          ]
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://www.bucketstack.app/#application",
+          "name": "BucketStack",
+          "url": "https://www.bucketstack.app",
+          "description": "Free and open source native S3 desktop file manager built with Rust and React for macOS, Windows, and Linux. Features multi-provider S3 support, local AES-256-GCM encrypted credentials, Monaco code editor, cloud streaming, and background sync.",
+          "applicationCategory": "DeveloperApplication",
+          "operatingSystem": ["macOS", "Windows", "Linux"],
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "author": {
+            "@id": "https://www.bucketstack.app/#organization"
+          },
+          "downloadUrl": "https://github.com/SaiAkashNeela/bucketstack/releases/latest",
+          "softwareVersion": "1.0.6",
+          "license": "https://opensource.org/licenses/MIT"
         }
-      }
+      ]
     }
-    </script>
-  <script>
-    // Removed CDN Tailwind
   </script>
+
   <!-- Analytics -->
   <script src="https://analytics.geeksdesigns.com/api/script.js" data-site-id="2" defer></script>
   <link
@@ -153,69 +184,134 @@
       color: var(--text-primary);
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      margin: 0;
     }
 
-    /* macOS-style scrollbars */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
+    /* Fallback SSR container for non-JS crawlers */
+    .ssr-fallback {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      line-height: 1.6;
     }
 
-    ::-webkit-scrollbar-track {
-      background: transparent;
+    .ssr-fallback h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      color: #0f172a;
     }
 
-    ::-webkit-scrollbar-thumb {
-      background: var(--border-secondary);
-      border-radius: 4px;
+    .ssr-fallback h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
     }
 
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--text-tertiary);
+    .ssr-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin: 20px 0;
     }
 
-    /* macOS-style selection */
-    ::selection {
-      background: rgba(59, 130, 246, 0.2);
+    .ssr-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
     }
 
-    /* Animation classes */
-    .fade-in {
-      animation: fadeIn 0.2s ease-out;
+    .ssr-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin: 24px 0;
     }
 
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(4px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    .ssr-links a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 500;
     }
 
-    .slide-in {
-      animation: slideIn 0.15s ease-out;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateX(-8px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
+    .ssr-links a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <!-- Server-Side & Semantic HTML Fallback for AI Agents & Search Crawlers without JS -->
+    <main class="ssr-fallback">
+      <header>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <img src="/logo.png" alt="BucketStack Logo" width="48" height="48" />
+          <span style="font-size: 24px; font-weight: 800;">BucketStack</span>
+        </div>
+        <h1>Manage S3 Buckets Like a Pro — Native Desktop App</h1>
+        <p style="font-size: 1.125rem; color: #475569;">
+          BucketStack is a fast, secure, and open-source desktop workstation built with Rust and React for managing AWS S3, Cloudflare R2, MinIO, Wasabi, Backblaze B2, and custom S3 storage providers on macOS, Windows, and Linux.
+        </p>
+      </header>
+
+      <nav class="ssr-links" aria-label="Quick links">
+        <a href="https://github.com/SaiAkashNeela/bucketstack/releases/latest">Download Latest Release</a>
+        <a href="/developers">Developer Portal & IPC API</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms</a>
+        <a href="/llms.txt">llms.txt (LLM Summary)</a>
+        <a href="/llms-full.txt">llms-full.txt (Full Agent Context)</a>
+      </nav>
+
+      <section>
+        <h2>Why Engineers Choose BucketStack</h2>
+        <div class="ssr-grid">
+          <div class="ssr-card">
+            <h3>🔒 Hardware-Bound Security</h3>
+            <p>Credentials never leave your machine. Stored using AES-256-GCM encryption linked directly to your macOS Keychain, Windows Credential Manager, or Linux Secret Service.</p>
+          </div>
+          <div class="ssr-card">
+            <h3>⚡ Blazing Rust Engine</h3>
+            <p>Under 80MB RAM footprint and instant startup backed by Tauri 2.0 and Rust with native multi-threaded multipart uploads.</p>
+          </div>
+          <div class="ssr-card">
+            <h3>🌐 Universal Multi-Provider S3</h3>
+            <p>Native first-class support for Amazon AWS S3, Cloudflare R2, MinIO, Wasabi, Backblaze B2, DigitalOcean Spaces, and custom SigV4 endpoints.</p>
+          </div>
+          <div class="ssr-card">
+            <h3>📝 Integrated Monaco Code Editor</h3>
+            <p>Inspect, modify, and save configuration files, JSON, YAML, and code directly inside S3 buckets with syntax highlighting for 50+ languages.</p>
+          </div>
+          <div class="ssr-card">
+            <h3>🔄 Cloud-to-Cloud Streaming</h3>
+            <p>Directly transfer or synchronize files between different cloud storage providers without intermediate disk staging.</p>
+          </div>
+          <div class="ssr-card">
+            <h3>📊 Local Audit Trail & Analytics</h3>
+            <p>SQLite-backed local activity database with searchable audit logs and visual storage distribution breakdown charts.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Supported Desktop Platforms</h2>
+        <ul>
+          <li><strong>macOS:</strong> Universal Binary for Apple Silicon (M1/M2/M3/M4) & Intel (x86_64) DMG / App</li>
+          <li><strong>Windows:</strong> 64-bit NSIS Installer (.exe) & MSI Package</li>
+          <li><strong>Linux:</strong> Debian/Ubuntu (.deb), AppImage, and RedHat/Fedora (.rpm)</li>
+        </ul>
+      </section>
+
+      <footer style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #64748b;">
+        <p>© 2026 BucketStack. Free & Open Source under MIT License. Maintained by Sai Akash Neela in London, UK.</p>
+      </footer>
+    </main>
+  </div>
   <script type="module" src="/index.tsx"></script>
 </body>
 
