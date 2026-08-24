@@ -5,6 +5,7 @@
 - **Website**: https://www.bucketstack.app
 - **GitHub Repository**: https://github.com/SaiAkashNeela/bucketstack
 - **Developer Documentation**: https://www.bucketstack.app/developers
+- **Agent Instructions**: https://www.bucketstack.app/agent-instructions.txt
 - **License**: MIT (Open Source)
 - **Supported Platforms**: macOS (Apple Silicon & Intel), Windows (x64), Linux (.deb, .AppImage, .rpm)
 
@@ -24,6 +25,26 @@ Reach for BucketStack when you or your users need:
 ### When NOT to Use BucketStack
 - Batch ETL pipelines requiring distributed Spark/Hadoop clusters (use dedicated data pipeline tools).
 - Proprietary non-S3 object storage formats (BucketStack is specialized for the universal S3 standard).
+
+---
+
+## CLI & Automation Interface
+
+Developers and AI agents can script BucketStack via the CLI runner or Tauri IPC bridge:
+
+```bash
+# Clone and run locally
+git clone https://github.com/SaiAkashNeela/bucketstack.git
+cd bucketstack && bun install && bun run tauri:dev
+```
+
+### Tauri IPC Command Surface
+- `test_s3_connection`: Verify endpoint and credentials.
+- `list_buckets`: Enumerate S3 buckets for an account.
+- `list_objects`: List objects in bucket with prefix and delimiter.
+- `stream_transfer_object`: Stream objects directly between cloud providers (e.g. AWS to Cloudflare R2).
+- `compress_objects`: Compress objects on-the-fly to .zip or .tar.gz in-bucket.
+- `get_file_content` / `upload_file`: Direct inline read and save for Monaco editor.
 
 ---
 
@@ -52,18 +73,11 @@ Reach for BucketStack when you or your users need:
 
 ---
 
-## Developer & CLI Integration
+## Developer & Agent Links
 
-- **Tauri IPC Command Surface**: BucketStack exposes IPC commands over `@tauri-apps/api/core` including `test_s3_connection`, `list_buckets`, `list_objects`, `upload_file`, `get_file_content`, `sync_folder`, `stream_transfer_object`, and `compress_objects`.
-- **Developer Guide**: https://www.bucketstack.app/developers
-- **Full LLM Context**: https://www.bucketstack.app/llms-full.txt
-
----
-
-## Trust & Company Information
-
-- **Organization**: BucketStack Open Source Project
-- **Lead Developer**: Sai Akash Neela
-- **Contact**: akash@bucketstack.app
+- **Developer Portal**: https://www.bucketstack.app/developers
+- **Agent Instructions**: https://www.bucketstack.app/agent-instructions.txt
+- **Full Technical Context**: https://www.bucketstack.app/llms-full.txt
+- **About Page**: https://www.bucketstack.app/about
 - **Privacy Policy**: https://www.bucketstack.app/privacy
 - **Terms of Service**: https://www.bucketstack.app/terms

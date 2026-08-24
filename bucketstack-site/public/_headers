@@ -1,0 +1,39 @@
+/*
+  Vary: Accept, Accept-Encoding
+  Access-Control-Allow-Origin: *
+  X-Content-Type-Options: nosniff
+
+/llms.txt
+  Content-Type: text/markdown; charset=utf-8
+  Vary: Accept, Accept-Encoding
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
+/llms-full.txt
+  Content-Type: text/markdown; charset=utf-8
+  Vary: Accept, Accept-Encoding
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
+/.well-known/llms.txt
+  Content-Type: text/markdown; charset=utf-8
+  Vary: Accept, Accept-Encoding
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
+/agent-instructions.txt
+  Content-Type: text/markdown; charset=utf-8
+  Vary: Accept, Accept-Encoding
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
+/agent-instructions.md
+  Content-Type: text/markdown; charset=utf-8
+  Vary: Accept, Accept-Encoding
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
+/404.html
+  Content-Type: text/html; charset=utf-8
+  Vary: Accept, Accept-Encoding
+  Access-Control-Allow-Origin: *
