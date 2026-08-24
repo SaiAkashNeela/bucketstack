@@ -87,9 +87,7 @@ function App() {
         <header className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80 transition-all">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <a href="/" className="flex items-center gap-2.5 group">
-              <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center p-1.5 shadow-sm group-hover:scale-105 transition-transform">
-                <img src="/logo.png" alt="BucketStack" className="w-full h-full object-contain" />
-              </div>
+              <img src="/logo.png" alt="BucketStack" className="w-8 h-8 object-contain group-hover:scale-105 transition-transform" />
               <div className="flex flex-col">
                 <span className="font-bold text-base tracking-tight text-slate-900 flex items-center gap-1.5">
                   BucketStack
@@ -633,9 +631,7 @@ function App() {
               
               <div className="col-span-2">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-6 h-6 rounded-md bg-slate-900 flex items-center justify-center p-1">
-                    <img src="/logo.png" alt="BucketStack" className="w-full h-full object-contain" />
-                  </div>
+                  <img src="/logo.png" alt="BucketStack" className="w-6 h-6 object-contain" />
                   <span className="font-bold text-lg text-slate-900">BucketStack</span>
                 </div>
                 <p className="text-sm text-slate-500 max-w-sm mb-6 leading-relaxed">
@@ -701,7 +697,7 @@ function App() {
             </div>
 
             <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-              <p>© 2026 BucketStack. Free &amp; Open Source under MIT License. London, United Kingdom.</p>
+              <p>© 2026 BucketStack. Free &amp; Open Source under MIT License.</p>
               <a
                 href="https://buymeacoffee.com/akash.neela"
                 target="_blank"

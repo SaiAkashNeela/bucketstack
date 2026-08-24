@@ -118,4 +118,3 @@ bun run tauri:build
 - **Privacy Policy**: https://www.bucketstack.app/privacy
 - **Terms of Service**: https://www.bucketstack.app/terms
 - **Maintainer**: Sai Akash Neela (<akash@bucketstack.app>)
-- **Location**: London, United Kingdom

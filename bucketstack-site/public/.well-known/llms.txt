@@ -65,7 +65,5 @@ Reach for BucketStack when you or your users need:
 - **Organization**: BucketStack Open Source Project
 - **Lead Developer**: Sai Akash Neela
 - **Contact**: akash@bucketstack.app
-- **HQ / Address**: London, United Kingdom
-- **About Page**: https://www.bucketstack.app/about
 - **Privacy Policy**: https://www.bucketstack.app/privacy
 - **Terms of Service**: https://www.bucketstack.app/terms
