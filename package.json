@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.10",
   "type": "module",
+<<<<<<< Updated upstream
   "overrides": {
     "fast-xml-parser": ">=5.3.4",
     "dompurify": ">=3.4.14"
@@ -13,6 +14,8 @@
       "dompurify": ">=3.4.14"
     }
   },
+=======
+>>>>>>> Stashed changes
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -22,35 +25,51 @@
     "tauri:build": "tauri build"
   },
   "dependencies": {
+<<<<<<< Updated upstream
     "@aws-sdk/client-s3": "^3.1116.0",
     "@aws-sdk/lib-storage": "^3.1116.0",
     "@aws-sdk/s3-request-presigner": "^3.1116.0",
+=======
+    "@aws-sdk/client-s3": "^3.1130.0",
+    "@aws-sdk/lib-storage": "^3.1130.0",
+    "@aws-sdk/s3-request-presigner": "^3.1130.0",
+>>>>>>> Stashed changes
     "@monaco-editor/react": "^4.7.0",
     "@tauri-apps/api": "^2.11.1",
-    "@tauri-apps/plugin-clipboard-manager": "^2.3.2",
-    "@tauri-apps/plugin-dialog": "^2.7.2",
+    "@tauri-apps/plugin-clipboard-manager": "^2.3.3",
+    "@tauri-apps/plugin-dialog": "^2.7.3",
     "@tauri-apps/plugin-process": "^2.3.1",
-    "@tauri-apps/plugin-updater": "^2.10.1",
+    "@tauri-apps/plugin-updater": "^2.11.0",
     "@types/jszip": "^3.4.1",
-    "jszip": "^3.10.1",
+    "jszip": "^3.10.2",
     "lucide-react": "^0.562.0",
     "mime-types": "^3.0.2",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "recharts": "^3.10.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
     "@tauri-apps/cli": "^2.11.4",
     "@types/mime-types": "^3.0.1",
-    "@types/node": "^22.20.1",
+    "@types/node": "^22.20.2",
     "@vitejs/plugin-react": "^5.2.0",
+<<<<<<< Updated upstream
     "autoprefixer": "^10.5.4",
     "postcss": "^8.5.26",
     "puppeteer-core": "^25.8.0",
+=======
+    "autoprefixer": "^10.5.6",
+    "postcss": "^8.5.28",
+>>>>>>> Stashed changes
     "tailwindcss": "^4.3.3",
     "typescript": "~5.8.3",
     "vite": "^6.4.3"
   },
-  "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48"
+  "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48",
+  "overrides": {
+    "fast-xml-parser": ">=5.3.4",
+    "dompurify": ">=3.4.15",
+    "nanoid": ">=3.3.19"
+  }
 }
