@@ -3,19 +3,6 @@
   "private": true,
   "version": "1.0.10",
   "type": "module",
-<<<<<<< Updated upstream
-  "overrides": {
-    "fast-xml-parser": ">=5.3.4",
-    "dompurify": ">=3.4.14"
-  },
-  "pnpm": {
-    "overrides": {
-      "fast-xml-parser": ">=5.3.4",
-      "dompurify": ">=3.4.14"
-    }
-  },
-=======
->>>>>>> Stashed changes
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -25,15 +12,9 @@
     "tauri:build": "tauri build"
   },
   "dependencies": {
-<<<<<<< Updated upstream
     "@aws-sdk/client-s3": "^3.1116.0",
     "@aws-sdk/lib-storage": "^3.1116.0",
     "@aws-sdk/s3-request-presigner": "^3.1116.0",
-=======
-    "@aws-sdk/client-s3": "^3.1130.0",
-    "@aws-sdk/lib-storage": "^3.1130.0",
-    "@aws-sdk/s3-request-presigner": "^3.1130.0",
->>>>>>> Stashed changes
     "@monaco-editor/react": "^4.7.0",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-clipboard-manager": "^2.3.3",
@@ -54,14 +35,9 @@
     "@types/mime-types": "^3.0.1",
     "@types/node": "^22.20.2",
     "@vitejs/plugin-react": "^5.2.0",
-<<<<<<< Updated upstream
     "autoprefixer": "^10.5.4",
     "postcss": "^8.5.26",
     "puppeteer-core": "^25.8.0",
-=======
-    "autoprefixer": "^10.5.6",
-    "postcss": "^8.5.28",
->>>>>>> Stashed changes
     "tailwindcss": "^4.3.3",
     "typescript": "~5.8.3",
     "vite": "^6.4.3"
