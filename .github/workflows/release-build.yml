@@ -20,18 +20,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: oven-sh/setup-bun@v2
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install
+        run: bun install
 
       - name: Build frontend
-        run: pnpm run build
+        run: bun run build
 
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v4
@@ -51,12 +50,11 @@ jobs:
           name: frontend-dist
           path: dist/
 
-      - uses: pnpm/action-setup@v4
+      - uses: oven-sh/setup-bun@v2
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'pnpm'
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -69,7 +67,7 @@ jobs:
           workspaces: '. -> target'
 
       - name: Install dependencies (for tauri CLI and build tools)
-        run: pnpm install
+        run: bun install
 
       - name: Resolve release tag
         id: get_tag
@@ -110,12 +108,11 @@ jobs:
           name: frontend-dist
           path: dist/
 
-      - uses: pnpm/action-setup@v4
+      - uses: oven-sh/setup-bun@v2
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'pnpm'
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -144,7 +141,7 @@ jobs:
             libfuse2
 
       - name: Install dependencies (for tauri CLI and build tools)
-        run: pnpm install
+        run: bun install
 
       - name: Resolve release tag
         id: get_tag
@@ -184,12 +181,11 @@ jobs:
           name: frontend-dist
           path: dist/
 
-      - uses: pnpm/action-setup@v4
+      - uses: oven-sh/setup-bun@v2
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'pnpm'
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -219,7 +215,7 @@ jobs:
           echo "${{ secrets.APPLE_API_KEY_CONTENT }}" | base64 --decode > ~/.private_keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8
 
       - name: Install dependencies
-        run: pnpm install
+        run: bun install
 
       - name: Resolve release tag
         id: get_tag

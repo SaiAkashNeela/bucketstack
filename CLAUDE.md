@@ -74,21 +74,21 @@ The application has a clear separation between frontend (React/TypeScript) and b
 
 ### Setup and Installation
 ```bash
-pnpm install
-# or: npm install, bun install
+bun install
+# or: npm install, pnpm install
 ```
 
 ### Running in Development
 
 **Full Development Mode** (Tauri with hot reload):
 ```bash
-pnpm run tauri:dev
+bun run tauri:dev
 ```
 Starts both Vite dev server (port 3000) and Tauri app. Frontend hot-reloads on changes.
 
 **Web-Only Development** (Vite server without Tauri):
 ```bash
-pnpm run dev
+bun run dev
 ```
 Useful for UI-only changes. Runs on http://localhost:3000 but won't work with backend features.
 
@@ -96,18 +96,18 @@ Useful for UI-only changes. Runs on http://localhost:3000 but won't work with ba
 
 **Type Check Only** (no output):
 ```bash
-pnpm exec tsc --noEmit
+bunx tsc --noEmit
 ```
 
 **Web Build Only**:
 ```bash
-pnpm run build
+bun run build
 ```
 Runs `tsc && vite build`. Outputs to `dist/` directory.
 
 **Native Application**:
 ```bash
-pnpm run tauri:build
+bun run tauri:build
 ```
 Builds native binaries for your current platform. Uses the `beforeBuildCommand` from `tauri.conf.json` to build web assets first.
 
@@ -241,8 +241,8 @@ bucketstack/
 
 ### Testing Your Changes
 
-1. **Quick iteration**: `pnpm run tauri:dev` auto-reloads frontend on changes
-2. **Backend changes**: Restart the dev app (Ctrl+C, then `pnpm run tauri:dev`)
+1. **Quick iteration**: `bun run tauri:dev` auto-reloads frontend on changes
+2. **Backend changes**: Restart the dev app (Ctrl+C, then `bun run tauri:dev`)
 3. **Test S3 connections**: AccountModal includes a test button that verifies credentials
 4. **Verify UI**: Check both main window and tray window (click tray icon to open)
 
@@ -269,7 +269,7 @@ bucketstack/
 
 ## Updating Dependencies
 
-- **pnpm**: Specified in package.json with pinned version
+- **Bun**: Used as the package manager and runtime (`bun.lock` is the source of truth)
 - **Rust**: Update via `cargo update` (check for breaking changes)
 - **Tauri**: Minor version updates fairly safe; check changelog for API changes
 - **AWS SDK**: May have breaking changes; review before updating major versions
