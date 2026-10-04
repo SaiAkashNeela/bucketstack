@@ -281,63 +281,74 @@ jobs:
           fi
           REPO=${{ github.repository }}
 
-          # Get release info
-          RELEASE=$(gh release view "$TAG" --json body,publishedAt,assets)
-          NOTES=$(echo "$RELEASE" | jq -r '.body')
-          PUB_DATE=$(echo "$RELEASE" | jq -r '.publishedAt')
-
-          # Initialize manifest
-          MANIFEST=$(cat <<EOF
-          {
-            "version": "$VERSION",
-            "notes": "Release $VERSION",
-            "pub_date": "$PUB_DATE",
-            "platforms": {}
-          }
-          EOF
-          )
-
-          # Extract asset filenames and build platform entries
-          ASSETS=$(echo "$RELEASE" | jq -r '.assets[].name')
-
-          # macOS (universal binary: app.tar.gz or dmg)
-          MACOS_TAR=$(echo "$ASSETS" | grep -E '.*universal.*\.app\.tar\.gz$' | grep -v '\.sig$' | head -1 || true)
-          if [ -z "$MACOS_TAR" ]; then
-            MACOS_TAR=$(echo "$ASSETS" | grep -E '.*universal.*\.dmg$' | grep -v '\.sig$' | head -1 || true)
+          # Get release info. The release is still a draft here, so publishedAt
+          # is null: fall back to "now" (pub_date must be RFC 3339 or the
+          # updater rejects the whole manifest).
+          RELEASE=$(gh release view "$TAG" --json publishedAt,assets)
+          PUB_DATE=$(echo "$RELEASE" | jq -r '.publishedAt // empty')
+          if [ -z "$PUB_DATE" ] || [ "$PUB_DATE" = "null" ]; then
+            PUB_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           fi
 
-          # Windows (.msi or .exe)
-          WINDOWS_MSI=$(echo "$ASSETS" | grep -E '.*(x64|_64).*\.(msi|exe)$' | grep -v '\.sig$' | head -1 || true)
+          ASSETS=$(echo "$RELEASE" | jq -r '.assets[].name' | grep -v '\.sig$' || true)
+          pick() { echo "$ASSETS" | grep -E "$1" | head -1 || true; }
 
-          # Linux (.AppImage, .deb, .rpm, or .tar.gz)
-          LINUX_TAR=$(echo "$ASSETS" | grep -E '.*(amd64|x86_64).*\.(AppImage|deb|rpm|tar\.gz)$' | grep -v '\.sig$' | head -1 || true)
+          MACOS_TAR=$(pick 'universal.*\.app\.tar\.gz$')
+          WINDOWS_NSIS=$(pick '_x64-setup\.exe$')
+          WINDOWS_MSI=$(pick '_x64.*\.msi$')
+          LINUX_APPIMAGE=$(pick '_amd64\.AppImage$')
+          LINUX_DEB=$(pick '_amd64\.deb$')
+          LINUX_RPM=$(pick '\.x86_64\.rpm$')
 
           # STRICT GUARD: Ensure all 3 platform builds succeeded and uploaded assets
-          if [ -z "$MACOS_TAR" ] || [ -z "$WINDOWS_MSI" ] || [ -z "$LINUX_TAR" ]; then
+          if [ -z "$MACOS_TAR" ] || [ -z "$WINDOWS_NSIS$WINDOWS_MSI" ] || [ -z "$LINUX_APPIMAGE$LINUX_DEB$LINUX_RPM" ]; then
             echo "::error::RELEASE CANCELLED! Not all platform builds succeeded."
-            echo "macOS binary: ${MACOS_TAR:-MISSING}"
-            echo "Windows binary: ${WINDOWS_MSI:-MISSING}"
-            echo "Linux binary: ${LINUX_TAR:-MISSING}"
+            echo "macOS updater bundle: ${MACOS_TAR:-MISSING}"
+            echo "Windows installer: ${WINDOWS_NSIS:-${WINDOWS_MSI:-MISSING}}"
+            echo "Linux package: ${LINUX_APPIMAGE:-${LINUX_DEB:-${LINUX_RPM:-MISSING}}}"
             echo "All 3 platform builds (macOS, Windows, Linux) must succeed before a release is published."
             exit 1
           fi
 
-          if [ ! -z "$MACOS_TAR" ]; then
-            MACOS_SIG="$MACOS_TAR.sig"
-            MACOS_URL="https://github.com/$REPO/releases/download/$TAG/$MACOS_TAR"
-            MACOS_SIG_URL="https://github.com/$REPO/releases/download/$TAG/$MACOS_SIG"
-            MANIFEST=$(echo "$MANIFEST" | jq ".platforms[\"darwin-aarch64\"] = {\"signature\": \"$MACOS_SIG_URL\", \"url\": \"$MACOS_URL\"}")
-            MANIFEST=$(echo "$MANIFEST" | jq ".platforms[\"darwin-x86_64\"] = {\"signature\": \"$MACOS_SIG_URL\", \"url\": \"$MACOS_URL\"}")
-          fi
+          # The updater needs the *contents* of each .sig file (a URL does not work)
+          mkdir -p sigs
+          gh release download "$TAG" --pattern '*.sig' --dir sigs --clobber
 
-          if [ ! -z "$WINDOWS_MSI" ]; then
-            MANIFEST=$(echo "$MANIFEST" | jq ".platforms[\"windows-x86_64\"] = {\"url\": \"https://github.com/$REPO/releases/download/$TAG/$WINDOWS_MSI\"}")
-          fi
+          MANIFEST=$(jq -n --arg v "$VERSION" --arg d "$PUB_DATE" \
+            '{version: $v, notes: ("Release " + $v), pub_date: $d, platforms: {}}')
 
-          if [ ! -z "$LINUX_TAR" ]; then
-            LINUX_SIG="$LINUX_TAR.sig"
-            MANIFEST=$(echo "$MANIFEST" | jq ".platforms[\"linux-x86_64\"] = {\"signature\": \"https://github.com/$REPO/releases/download/$TAG/$LINUX_SIG\", \"url\": \"https://github.com/$REPO/releases/download/$TAG/$LINUX_TAR\"}")
-          fi
+          # add_platform <platform key> <asset name>
+          add_platform() {
+            [ -n "$2" ] || return 0
+            if [ ! -s "sigs/$2.sig" ]; then
+              echo "::error::Missing signature for $2"
+              exit 1
+            fi
+            MANIFEST=$(echo "$MANIFEST" | jq --arg k "$1" \
+              --arg url "https://github.com/$REPO/releases/download/$TAG/$2" \
+              --rawfile sig "sigs/$2.sig" \
+              '.platforms[$k] = {url: $url, signature: ($sig | rtrimstr("\n"))}')
+          }
+
+          # The updater looks up "{os}-{arch}-{installer}" first, then "{os}-{arch}",
+          # so each install type gets a matching package plus a generic fallback.
+          for k in darwin-aarch64 darwin-x86_64 darwin-aarch64-app darwin-x86_64-app; do
+            add_platform "$k" "$MACOS_TAR"
+          done
+          add_platform windows-x86_64-nsis "$WINDOWS_NSIS"
+          add_platform windows-x86_64-msi "$WINDOWS_MSI"
+          add_platform windows-x86_64 "${WINDOWS_NSIS:-$WINDOWS_MSI}"
+          add_platform linux-x86_64-appimage "$LINUX_APPIMAGE"
+          add_platform linux-x86_64-deb "$LINUX_DEB"
+          add_platform linux-x86_64-rpm "$LINUX_RPM"
+          add_platform linux-x86_64 "${LINUX_APPIMAGE:-${LINUX_DEB:-$LINUX_RPM}}"
+
+          # Validate: the updater rejects the whole file if any entry is invalid
+          echo "$MANIFEST" | jq -e '
+            (.version | length > 0)
+            and (.pub_date | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+(Z|[+-][0-9]{2}:[0-9]{2})$"))
+            and ([.platforms[] | (.url | startswith("https://")) and (.signature | length > 0) and ((.signature | startswith("http")) | not)] | all)
+          ' > /dev/null || { echo "::error::Generated latest.json is invalid"; echo "$MANIFEST"; exit 1; }
 
           echo "$MANIFEST" | jq . > latest.json
           echo "Generated manifest:"
