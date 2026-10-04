@@ -182,6 +182,13 @@ pub fn init_security_manager() {
     SECURITY_MANAGER.get_or_init(|| Mutex::new(SecurityManager::new()));
 }
 
+/// Test-only: point the global manager at an isolated credentials file
+/// so tests never touch the user's real credential store.
+#[cfg(test)]
+pub fn init_security_manager_for_test(file_path: PathBuf) {
+    SECURITY_MANAGER.get_or_init(|| Mutex::new(SecurityManager { key: SecurityManager::derive_key(), file_path }));
+}
+
 pub fn get_manager() -> std::sync::MutexGuard<'static, SecurityManager> {
     SECURITY_MANAGER.get().expect("Security manager not initialized").lock().unwrap()
 }

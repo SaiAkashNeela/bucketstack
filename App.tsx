@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { HardDrive, Trash2, AlertCircle, Database } from 'lucide-react';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
-import { save } from '@tauri-apps/plugin-dialog';
+import { save, confirm } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
@@ -10,7 +10,7 @@ import { FileExplorer } from './components/FileExplorer';
 import { AccountModal } from './components/AccountModal';
 import { FileEditorModal } from './components/FileEditorModal';
 import { ThemeProvider } from './components/ThemeProvider';
-import { s3Service } from './services/s3Service';
+import { s3Service, errMsg, parentPrefix } from './services/s3Service';
 import { versionService } from './services/versionService';
 import { UploadConflictModal } from './components/UploadConflictModal';
 import { activityService } from './services/activityService';
@@ -190,16 +190,23 @@ const App: React.FC = () => {
     loadAccounts();
   }, []);
 
-  // Check for app updates
+  // Check for app updates on launch and periodically: the app keeps running in
+  // the tray (closing the window only hides it), so a launch-only check would
+  // miss releases published while it's running.
   useEffect(() => {
+    let found = false;
     const checkForUpdates = async () => {
+      if (found) return;
       const update = await versionService.checkForUpdate();
       if (update) {
+        found = true;
         setUpdateAvailable(true);
         setPendingUpdate(update);
       }
     };
     checkForUpdates();
+    const intervalId = setInterval(checkForUpdates, 6 * 60 * 60 * 1000);
+    return () => clearInterval(intervalId);
   }, []);
 
   const handleInstallUpdate = async () => {
@@ -371,12 +378,13 @@ const App: React.FC = () => {
         enableActivityLog: activeAcc.enableActivityLog ?? true
       });
       showToast(`Upload finished`, 'success');
+      finishOperation(true);
       refreshObjects();
     } catch (err: any) {
       console.error('Native upload failed:', err);
-      showToast(`Upload failed: ${err}`, 'error');
+      showToast(`Upload failed: ${errMsg(err)}`, 'error');
+      finishOperation(false);
     } finally {
-      finishOperation(true);
       setTimeout(() => setUploadStatus(null), 3000);
     }
   };
@@ -524,8 +532,11 @@ const App: React.FC = () => {
 
     if (isTrashNowDisabled) {
       // Show confirmation dialog
-      const confirmed = window.confirm(
-        'You are disabling Trash for this bucket.\n\nThis will permanently delete the existing .trash/ folder and all files in it. This action cannot be undone.\n\nDo you want to continue?'
+      // window.confirm is replaced by the dialog plugin with an async function,
+      // so it must be the awaited plugin API (a Promise is always truthy).
+      const confirmed = await confirm(
+        'You are disabling Trash for this bucket.\n\nThis will permanently delete the existing .trash/ folder and all files in it. This action cannot be undone.\n\nDo you want to continue?',
+        { title: 'Disable Trash', kind: 'warning' }
       );
 
       if (!confirmed) {
@@ -672,6 +683,8 @@ const App: React.FC = () => {
 
     if (itemsArray.length === 0) return;
 
+    let failedCount = 0;
+
     // Track batch resolution for conflicts
     let batchAction: 'overwrite' | 'skip' | 'rename' | null = null;
     const existingNames = new Set(objects.map(obj => obj.name));
@@ -748,6 +761,7 @@ const App: React.FC = () => {
         );
       } catch (e: any) {
         console.error(`Failed to upload ${fileName}:`, e);
+        failedCount++;
         setUploadStatus(prev => prev ? ({ ...prev, status: 'error' }) : null);
         await activityService.logActivity(
           activeAccount,
@@ -761,11 +775,15 @@ const App: React.FC = () => {
       }
     }
 
-    setUploadStatus(prev => prev ? ({ ...prev, status: 'completed' }) : null);
+    setUploadStatus(prev => prev ? ({ ...prev, status: failedCount > 0 ? 'error' : 'completed' }) : null);
     await refreshObjects();
 
     const destination = currentPrefix ? `to "${currentPrefix}"` : `to root of "${activeAccount.bucketName}"`;
-    showToast(`Upload sequence finished ${destination}`, 'success');
+    if (failedCount > 0) {
+      showToast(`${failedCount} of ${itemsArray.length} upload${itemsArray.length > 1 ? 's' : ''} failed ${destination}`, 'error');
+    } else {
+      showToast(`Upload sequence finished ${destination}`, 'success');
+    }
 
     setTimeout(() => setUploadStatus(null), 3000);
   };
@@ -848,7 +866,15 @@ const App: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Transfer failed:', error);
-      showToast(`Transfer failed: ${error.message}`, 'error');
+      const message = errMsg(error);
+      // Don't leave the failed batch spinning as "active" in the transfer panel
+      const batchIds = new Set(newJobs.map(j => j.id));
+      setTransferJobs(currentJobs => currentJobs.map(job =>
+        batchIds.has(job.id) && job.status !== 'completed'
+          ? { ...job, status: 'error', error: message }
+          : job
+      ));
+      showToast(`Transfer failed: ${message}`, 'error');
     }
   };
 
@@ -909,14 +935,16 @@ const App: React.FC = () => {
     showOperation(`Renaming "${obj.name}"`);
     try {
 
-      await s3Service.renameObject(activeAccount, activeAccount.bucketName, obj, newName, currentPrefix);
+      // Rename in the item's own folder (search results may live anywhere)
+      const parent = parentPrefix(obj.key);
+      await s3Service.renameObject(activeAccount, activeAccount.bucketName, obj, newName, parent);
 
       // Log rename
       await activityService.logActivity(
         activeAccount,
         'rename',
         obj.key,
-        `${currentPrefix}${newName}`,
+        `${parent}${newName}${obj.isFolder ? '/' : ''}`,
         'success',
         undefined,
         obj.size
@@ -1255,7 +1283,8 @@ const App: React.FC = () => {
 
   const handleEmptyTrash = async () => {
     if (!activeAccount || !activeAccount.bucketName) return;
-    if (!window.confirm("Are you sure you want to permanently delete all items in Trash? This cannot be undone.")) return;
+    const confirmed = await confirm("Are you sure you want to permanently delete all items in Trash? This cannot be undone.", { title: 'Empty Trash', kind: 'warning' });
+    if (!confirmed) return;
 
     showOperation("Emptying Trash...");
     try {
@@ -1317,6 +1346,7 @@ const App: React.FC = () => {
 
     try {
       await invoke('compress_objects', {
+        endpoint: (activeAccount.endpoint && activeAccount.endpoint.includes('amazonaws.com')) ? '' : activeAccount.endpoint,
         bucket: activeAccount.bucketName,
         keys: itemsToCompress.map(item => item.key),
         prefix: currentPrefix,
@@ -1379,7 +1409,8 @@ const App: React.FC = () => {
     } catch (e: any) {
       setUploadStatus({ fileName, progress: 0, status: 'error' });
       finishOperation(false);
-      showToast(isDownload ? 'Failed to download archive.' : 'Failed to create archive.', 'error');
+      console.error('Compression failed:', e);
+      showToast(`${isDownload ? 'Failed to download archive' : 'Failed to create archive'}: ${errMsg(e)}`, 'error');
       setTimeout(() => setUploadStatus(null), 3000);
     }
   };
@@ -1765,8 +1796,9 @@ const App: React.FC = () => {
         finishOperation(true);
         showToast(`Downloaded "${file.name}"`, 'success');
       } catch (e) {
+        console.error('Download failed:', e);
         finishOperation(false);
-        showToast('Failed to download file', 'error');
+        showToast(`Failed to download file: ${errMsg(e)}`, 'error');
       }
       return;
     }

@@ -41,5 +41,6 @@ commands.allow = [
     "sync_folder",
     "upload_paths",
     "download_file_to_path",
-    "reset_application"
+    "reset_application",
+    "delete_trash_folder"
 ]

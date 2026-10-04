@@ -3,6 +3,7 @@ import JSZip from 'jszip';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { secureStorage } from './secureStorage';
+import { activityService } from './activityService';
 import mime from 'mime-types';
 
 // Safe invoke wrapper that handles Tauri initialization errors gracefully
@@ -19,6 +20,15 @@ const safeInvoke = async <T = any>(cmd: string, args?: Record<string, any>): Pro
     }
     throw error;
   }
+};
+
+// Tauri rejects `invoke` with the command's serialized error, which for our
+// `Result<_, String>` commands is a plain string (not an Error). Normalize both.
+export const errMsg = (error: unknown): string => {
+  if (typeof error === 'string') return error;
+  if (error instanceof Error) return error.message;
+  if (error && typeof (error as any).message === 'string') return (error as any).message;
+  return String(error);
 };
 
 // --- Secure Account Storage ---
@@ -53,7 +63,7 @@ export const clearAllData = async (): Promise<void> => {
     window.location.reload();
   } catch (error: any) {
     console.error('❌ Reset failed:', error);
-    throw new Error(`Application reset failed: ${error.message}`);
+    throw new Error(`Application reset failed: ${errMsg(error)}`);
   }
 };
 
@@ -179,6 +189,38 @@ const checkRateLimit = (operation: string): boolean => {
   recentOperations.push(now);
   operationTracker.set(operation, recentOperations);
   return true;
+};
+
+const endpointFor = (account: S3Account): string =>
+  (account.endpoint && account.endpoint.includes('amazonaws.com')) ? '' : account.endpoint;
+
+// Every key under `prefix` (all nesting levels, including folder markers),
+// paginated. Folder operations must use this: a delimiter listing only shows
+// direct children and S3 returns at most 1000 keys per page.
+const listAllKeys = async (account: S3Account, bucket: string, prefix: string): Promise<string[]> => {
+  const keys: string[] = [];
+  let continuationToken: string | undefined = undefined;
+  do {
+    const res: any = await invoke('list_objects_recursive', {
+      endpoint: endpointFor(account),
+      region: account.region,
+      accessKeyId: account.accessKeyId.trim(),
+      secretAccessKey: account.secretAccessKey.trim(),
+      bucket,
+      prefix,
+      continuationToken,
+      maxKeys: 1000,
+    });
+    for (const obj of res.objects as { key: string }[]) keys.push(obj.key);
+    continuationToken = res.next_continuation_token || undefined;
+  } while (continuationToken);
+  return keys;
+};
+
+/** Parent folder prefix of a key: "a/b/c.txt" -> "a/b/", "a/b/" -> "a/", "c.txt" -> "". */
+export const parentPrefix = (key: string): string => {
+  const trimmed = key.replace(/\/+$/, '');
+  return trimmed.substring(0, trimmed.lastIndexOf('/') + 1);
 };
 
 // --- Service Methods ---
@@ -307,10 +349,10 @@ export const s3Service = {
 
       logSecurityEvent('ACCOUNT_SAVE_SUCCESS', { accountId: account.id, name: account.name });
     } catch (error: any) {
-      logSecurityEvent('ACCOUNT_SAVE_FAILED', { accountId: account.id, error: error.message });
+      logSecurityEvent('ACCOUNT_SAVE_FAILED', { accountId: account.id, error: errMsg(error) });
       // Provide more helpful error message
-      if (error.message?.includes('secure') || error.message?.includes('storage')) {
-        throw new Error(`Failed to save credentials securely: ${error.message}`);
+      if (errMsg(error).includes('secure') || errMsg(error).includes('storage')) {
+        throw new Error(`Failed to save credentials securely: ${errMsg(error)}`);
       }
       throw error;
     }
@@ -335,7 +377,7 @@ export const s3Service = {
 
       logSecurityEvent('ACCOUNT_DELETE_SUCCESS', { accountId: id });
     } catch (error: any) {
-      logSecurityEvent('ACCOUNT_DELETE_FAILED', { accountId: id, error: error.message });
+      logSecurityEvent('ACCOUNT_DELETE_FAILED', { accountId: id, error: errMsg(error) });
       throw error;
     }
   },
@@ -357,7 +399,7 @@ export const s3Service = {
       localStorage.removeItem(ACCOUNTS_KEY);
       logSecurityEvent('ALL_ACCOUNTS_DELETE_SUCCESS');
     } catch (error: any) {
-      logSecurityEvent('ALL_ACCOUNTS_DELETE_FAILED', { error: error.message });
+      logSecurityEvent('ALL_ACCOUNTS_DELETE_FAILED', { error: errMsg(error) });
       throw error;
     }
   },
@@ -440,7 +482,7 @@ export const s3Service = {
     } catch (error: any) {
       console.error('Connection test failed:', error);
 
-      const msg = error.message || '';
+      const msg = errMsg(error);
 
       // Provide more specific error messages based on error type
       if (msg.includes('InvalidAccessKeyId')) {
@@ -493,12 +535,12 @@ export const s3Service = {
       };
     } catch (error: any) {
       console.error('Failed to create bucket:', error);
-      if (error.message?.includes('BucketAlreadyExists')) {
+      if (errMsg(error).includes('BucketAlreadyExists')) {
         throw new Error("Bucket already exists");
-      } else if (error.message?.includes('BucketAlreadyOwnedByYou')) {
+      } else if (errMsg(error).includes('BucketAlreadyOwnedByYou')) {
         throw new Error("Bucket already owned by you");
       } else {
-        throw new Error(`Failed to create bucket: ${error.message}`);
+        throw new Error(`Failed to create bucket: ${errMsg(error)}`);
       }
     }
   },
@@ -521,12 +563,12 @@ export const s3Service = {
       }
     } catch (error: any) {
       console.error('Failed to delete bucket:', error);
-      if (error.message?.includes('BucketNotEmpty')) {
+      if (errMsg(error).includes('BucketNotEmpty')) {
         throw new Error("Bucket is not empty");
-      } else if (error.message?.includes('NoSuchBucket')) {
+      } else if (errMsg(error).includes('NoSuchBucket')) {
         throw new Error("Bucket does not exist");
       } else {
-        throw new Error(`Failed to delete bucket: ${error.message}`);
+        throw new Error(`Failed to delete bucket: ${errMsg(error)}`);
       }
     }
   },
@@ -568,12 +610,12 @@ export const s3Service = {
       });
     } catch (error: any) {
       console.error('Failed to list objects:', error);
-      if (error.message?.includes('NoSuchBucket')) {
+      if (errMsg(error).includes('NoSuchBucket')) {
         throw new Error("Bucket does not exist");
-      } else if (error.message?.includes('AccessDenied')) {
+      } else if (errMsg(error).includes('AccessDenied')) {
         throw new Error("Access denied to bucket");
       } else {
-        throw new Error(`Failed to list objects: ${error.message}`);
+        throw new Error(`Failed to list objects: ${errMsg(error)}`);
       }
     }
   },
@@ -712,12 +754,12 @@ export const s3Service = {
 
     } catch (error: any) {
       console.error('Failed to upload file:', error);
-      if (error.message?.includes('NoSuchBucket')) {
+      if (errMsg(error).includes('NoSuchBucket')) {
         throw new Error("Bucket does not exist");
-      } else if (error.message?.includes('AccessDenied')) {
+      } else if (errMsg(error).includes('AccessDenied')) {
         throw new Error("Access denied to bucket");
       } else {
-        throw new Error(`Failed to upload file: ${error.message}`);
+        throw new Error(`Failed to upload file: ${errMsg(error)}`);
       }
     }
   },
@@ -737,7 +779,7 @@ export const s3Service = {
       return content;
     } catch (error: any) {
       console.error('Failed to get file content:', error);
-      throw new Error(`Failed to load file: ${error.message}`);
+      throw new Error(`Failed to load file: ${errMsg(error)}`);
     }
   },
 
@@ -765,7 +807,7 @@ export const s3Service = {
       }));
     } catch (error: any) {
       console.error('Failed to search objects:', error);
-      throw new Error(`Search failed: ${error.message}`);
+      throw new Error(`Search failed: ${errMsg(error)}`);
     }
   },
 
@@ -789,44 +831,33 @@ export const s3Service = {
       });
     } catch (error: any) {
       console.error('Failed to create folder:', error);
-      if (error.message?.includes('AccessDenied')) {
+      if (errMsg(error).includes('AccessDenied')) {
         throw new Error("Access denied: Cannot create folder.");
       } else {
-        throw new Error(`Failed to create folder: ${error.message}`);
+        throw new Error(`Failed to create folder: ${errMsg(error)}`);
       }
     }
   },
 
   deleteObject: async (account: S3Account, bucket: string, object: S3Object, prefix: string): Promise<void> => {
     try {
-      if (object.isFolder) {
-        // For folders, we need to delete all objects with the folder prefix
-        const objectsToDelete = await s3Service.listObjects(account, bucket, object.key);
+      const sanitizedEndpoint = endpointFor(account);
+      // Folders: every nested key (files, sub-folder markers, the folder marker itself)
+      const keys = object.isFolder ? await listAllKeys(account, bucket, object.key) : [object.key];
 
-        if (objectsToDelete.length > 0) {
-          // Delete all objects in the folder recursively via the service to ensure soft-delete logic is applied
-          for (const obj of objectsToDelete) {
-            await s3Service.deleteObject(account, bucket, obj, prefix);
-          }
-        }
-
-        // Delete the folder marker itself
-        // Note: Folder markers should also be soft-deleted if they are distinct objects
-        const sanitizedEndpoint = (account.endpoint && account.endpoint.includes('amazonaws.com')) ? '' : account.endpoint;
-
-        // Check for Trash (only if not already in trash)
-        if (account.enableTrash && !object.key.startsWith('.trash/')) {
-          const trashKey = `.trash/${object.key}`;
+      for (const key of keys) {
+        // Soft delete into .trash/ (only if not already in trash)
+        if (account.enableTrash && !key.startsWith('.trash/')) {
           await invoke<boolean>('copy_object', {
             endpoint: sanitizedEndpoint,
             region: account.region,
             accessKeyId: account.accessKeyId.trim(),
             secretAccessKey: account.secretAccessKey.trim(),
             bucket,
-            sourceKey: object.key,
-            destKey: trashKey,
+            sourceKey: key,
+            destKey: `.trash/${key}`,
             metadata: {
-              'original-path': object.key,
+              'original-path': key,
               'deleted-at': new Date().toISOString()
             }
           });
@@ -838,50 +869,19 @@ export const s3Service = {
           accessKeyId: account.accessKeyId.trim(),
           secretAccessKey: account.secretAccessKey.trim(),
           bucket,
-          key: object.key,
-        });
-
-      } else {
-        const sanitizedEndpoint = (account.endpoint && account.endpoint.includes('amazonaws.com')) ? '' : account.endpoint;
-
-        // Check for Trash (only if not already in trash)
-        if (account.enableTrash && !object.key.startsWith('.trash/')) {
-          const trashKey = `.trash/${object.key}`;
-          await invoke<boolean>('copy_object', {
-            endpoint: sanitizedEndpoint,
-            region: account.region,
-            accessKeyId: account.accessKeyId.trim(),
-            secretAccessKey: account.secretAccessKey.trim(),
-            bucket,
-            sourceKey: object.key,
-            destKey: trashKey,
-            metadata: {
-              'original-path': object.key,
-              'deleted-at': new Date().toISOString()
-            }
-          });
-        }
-
-        // Delete single object using Rust backend (bypasses CORS)
-        await invoke<boolean>('delete_object', {
-          endpoint: sanitizedEndpoint,
-          region: account.region,
-          accessKeyId: account.accessKeyId.trim(),
-          secretAccessKey: account.secretAccessKey.trim(),
-          bucket,
-          key: object.key,
+          key,
         });
       }
     } catch (error: any) {
       console.error('Failed to delete object:', error);
-      if (error.message?.includes('NoSuchBucket')) {
+      if (errMsg(error).includes('NoSuchBucket')) {
         throw new Error("Bucket does not exist");
-      } else if (error.message?.includes('NoSuchKey')) {
+      } else if (errMsg(error).includes('NoSuchKey')) {
         throw new Error("Object does not exist");
-      } else if (error.message?.includes('AccessDenied')) {
+      } else if (errMsg(error).includes('AccessDenied')) {
         throw new Error("Access denied to bucket");
       } else {
-        throw new Error(`Failed to delete object: ${error.message}`);
+        throw new Error(`Failed to delete object: ${errMsg(error)}`);
       }
     }
   },
@@ -890,54 +890,28 @@ export const s3Service = {
     try {
       const isFolder = object.isFolder;
       const newKey = prefix + newName + (isFolder ? '/' : '');
+      if (newKey === object.key) return;
 
-      if (isFolder) {
-        // For folders, we need to rename all objects with the folder prefix
-        const objectsToMove = await s3Service.listObjects(account, bucket, object.key);
+      const sanitizedEndpoint = endpointFor(account);
+      // Folders: move every nested key (files, sub-folder markers and the
+      // folder marker if one exists) to the new prefix
+      const keys = isFolder ? await listAllKeys(account, bucket, object.key) : [object.key];
 
-        // Rename all objects in the folder
-        for (const obj of objectsToMove) {
-          const newObjKey = obj.key.replace(object.key, newKey);
-          await invoke<boolean>('rename_object', {
-            endpoint: account.endpoint,
-            region: account.region,
-            accessKeyId: account.accessKeyId.trim(),
-            secretAccessKey: account.secretAccessKey.trim(),
-            bucket,
-            oldKey: obj.key,
-            newKey: newObjKey,
-          });
-        }
-
-        const sanitizedEndpoint = (account.endpoint && account.endpoint.includes('amazonaws.com')) ? '' : account.endpoint;
-
-        // Rename the folder marker itself
+      for (const oldKey of keys) {
+        // Rename using Rust backend (copy + delete)
         await invoke<boolean>('rename_object', {
           endpoint: sanitizedEndpoint,
           region: account.region,
           accessKeyId: account.accessKeyId.trim(),
           secretAccessKey: account.secretAccessKey.trim(),
           bucket,
-          oldKey: object.key,
-          newKey,
-        });
-      } else {
-        const sanitizedEndpoint = (account.endpoint && account.endpoint.includes('amazonaws.com')) ? '' : account.endpoint;
-
-        // Rename single object using Rust backend (copy + delete)
-        await invoke<boolean>('rename_object', {
-          endpoint: sanitizedEndpoint,
-          region: account.region,
-          accessKeyId: account.accessKeyId.trim(),
-          secretAccessKey: account.secretAccessKey.trim(),
-          bucket,
-          oldKey: object.key,
-          newKey,
+          oldKey,
+          newKey: newKey + oldKey.slice(object.key.length),
         });
       }
     } catch (error: any) {
       console.error('Failed to rename object:', error);
-      if (error.message?.includes('AccessDenied')) {
+      if (errMsg(error).includes('AccessDenied')) {
         throw new Error("Access Denied: Check your permissions (e.g., s3:PutObject, s3:DeleteObject).");
       }
       throw error;
@@ -1013,14 +987,14 @@ export const s3Service = {
       };
     } catch (error: any) {
       console.error('Failed to copy object:', error);
-      if (error.message?.includes('NoSuchBucket')) {
+      if (errMsg(error).includes('NoSuchBucket')) {
         throw new Error("Source or destination bucket does not exist");
-      } else if (error.message?.includes('NoSuchKey')) {
+      } else if (errMsg(error).includes('NoSuchKey')) {
         throw new Error("Object does not exist");
-      } else if (error.message?.includes('AccessDenied')) {
+      } else if (errMsg(error).includes('AccessDenied')) {
         throw new Error("Access denied to bucket");
       } else {
-        throw new Error(`Failed to copy object: ${error.message}`);
+        throw new Error(`Failed to copy object: ${errMsg(error)}`);
       }
     }
   },
@@ -1046,7 +1020,7 @@ export const s3Service = {
       return url;
     } catch (error: any) {
       console.error('Failed to generate signed URL:', error);
-      throw new Error(`Failed to generate signed URL: ${error.message}`);
+      throw new Error(`Failed to generate signed URL: ${errMsg(error)}`);
     }
   },
 
@@ -1075,48 +1049,37 @@ export const s3Service = {
   },
 
   restoreObject: async (account: S3Account, bucket: string, object: S3Object): Promise<void> => {
-    // 1. Get metadata to find original path
-    const meta = await s3Service.getObjectMetadata(account, bucket, object.key);
-    // Default original path is removing .trash/ prefix
-    let originalKey = object.key.replace(/^\.trash\//, '');
+    const sanitizedEndpoint = endpointFor(account);
+    // A trashed folder is just a prefix: restore every key inside it
+    const trashKeys = object.isFolder ? await listAllKeys(account, bucket, object.key) : [object.key];
 
-    // Check for stored metadata 'original-path' (S3 metadata keys are lowercase usually)
-    if (meta['original-path']) {
-      originalKey = meta['original-path'];
-    } else if (meta['Original-Path']) {
-      originalKey = meta['Original-Path'];
+    for (const trashKey of trashKeys) {
+      // 1. Original path: stored metadata, else strip the .trash/ prefix
+      const meta = await s3Service.getObjectMetadata(account, bucket, trashKey);
+      const originalKey = meta['original-path'] || meta['Original-Path'] || trashKey.replace(/^\.trash\//, '');
+
+      // 2. Copy back (without the trash metadata)
+      await invoke<boolean>('copy_object', {
+        endpoint: sanitizedEndpoint,
+        region: account.region,
+        accessKeyId: account.accessKeyId.trim(),
+        secretAccessKey: account.secretAccessKey.trim(),
+        bucket,
+        sourceKey: trashKey,
+        destKey: originalKey,
+        metadata: {}
+      });
+
+      // 3. Delete from trash
+      await invoke<boolean>('delete_object', {
+        endpoint: sanitizedEndpoint,
+        region: account.region,
+        accessKeyId: account.accessKeyId.trim(),
+        secretAccessKey: account.secretAccessKey.trim(),
+        bucket,
+        key: trashKey
+      });
     }
-
-    // 2. Copy back
-    const sanitizedEndpoint = (account.endpoint && account.endpoint.includes('amazonaws.com')) ? '' : account.endpoint;
-    await invoke<boolean>('copy_object', {
-      endpoint: sanitizedEndpoint,
-      region: account.region,
-      accessKeyId: account.accessKeyId.trim(),
-      secretAccessKey: account.secretAccessKey.trim(),
-      bucket,
-      sourceKey: object.key,
-      destKey: originalKey,
-      metadata: null // No metadata needed for restored object (or preserve?)
-    });
-
-    // 3. Delete from trash
-    await invoke<boolean>('delete_object', {
-      endpoint: sanitizedEndpoint,
-      region: account.region,
-      accessKeyId: account.accessKeyId.trim(),
-      secretAccessKey: account.secretAccessKey.trim(),
-      bucket,
-      key: object.key
-    });
-    await invoke<boolean>('delete_object', {
-      endpoint: sanitizedEndpoint,
-      region: account.region,
-      accessKeyId: account.accessKeyId.trim(),
-      secretAccessKey: account.secretAccessKey.trim(),
-      bucket,
-      key: object.key
-    });
   },
 
   syncFolder: async (
@@ -1168,10 +1131,14 @@ export const s3Service = {
 
         if (isSameAccount && job.sourceBucket === job.destBucket) {
           // Rename/Move within same bucket
+          // Folder dest keys end with '/', so split name/parent on the trimmed key
+          const destPath = job.destKey.replace(/\/+$/, '');
+          const destName = destPath.split('/').pop()!;
+          const destParent = destPath.substring(0, destPath.lastIndexOf('/') + 1);
           if (job.type === 'move') {
-            await s3Service.renameObject(sourceAcc, job.sourceBucket, { key: job.sourceKey, isFolder: job.isFolder } as S3Object, job.destKey.split('/').filter(p => p).pop()!, job.destKey.substring(0, job.destKey.lastIndexOf('/') + 1));
+            await s3Service.renameObject(sourceAcc, job.sourceBucket, { key: job.sourceKey, isFolder: job.isFolder } as S3Object, destName, destParent);
           } else {
-            await s3Service.copyObject(sourceAcc, job.sourceBucket, { key: job.sourceKey, name: job.fileName, isFolder: job.isFolder } as S3Object, job.destBucket, job.destKey.substring(0, job.destKey.lastIndexOf('/') + 1));
+            await s3Service.copyObject(sourceAcc, job.sourceBucket, { key: job.sourceKey, name: destName, isFolder: job.isFolder } as S3Object, job.destBucket, destParent);
           }
         } else if (isSameProvider) {
           // Optimized intra-provider copy
@@ -1204,14 +1171,14 @@ export const s3Service = {
           // Cross-provider streaming
           if (job.isFolder) {
             // For folders, we need to list and transfer each file
-            const objects = await s3Service.listObjects(sourceAcc, job.sourceBucket, job.sourceKey);
-            for (const obj of objects) {
-              if (obj.isFolder) continue; // listObjects should handle nested?
-              const relativeKey = obj.key.replace(job.sourceKey, '');
+            const keys = await listAllKeys(sourceAcc, job.sourceBucket, job.sourceKey);
+            for (const key of keys) {
+              if (key.endsWith('/')) continue; // folder markers carry no data
+              const relativeKey = key.slice(job.sourceKey.length);
               await invoke('stream_transfer_object', {
                 jobId: job.id,
                 sEndpoint, sRegion: sourceAcc.region, sAccessKey: sourceAcc.accessKeyId, sSecretKey: sourceAcc.secretAccessKey,
-                sBucket: job.sourceBucket, sKey: obj.key,
+                sBucket: job.sourceBucket, sKey: key,
                 dEndpoint, dRegion: destAcc.region, dAccessKey: destAcc.accessKeyId, dSecretKey: destAcc.secretAccessKey,
                 dBucket: job.destBucket, dKey: job.destKey + relativeKey
               });
@@ -1239,16 +1206,13 @@ export const s3Service = {
         // }
 
         // Activity Logging
-        await s3Service.logActivity({
-          connection_id: sourceAcc.id,
-          provider: sourceAcc.provider,
-          bucket_name: job.sourceBucket,
-          action_type: job.type === 'move' ? 'move' : 'copy',
-          object_path_before: job.sourceKey,
-          object_path_after: `${destAcc.bucketName}/${job.destKey}`,
-          status: 'success',
-          source: 'user'
-        });
+        await activityService.logActivity(
+          sourceAcc,
+          job.type === 'move' ? 'move' : 'copy',
+          job.sourceKey,
+          `${job.destBucket}/${job.destKey}`,
+          'success'
+        );
       }
     } finally {
       unlisten();
@@ -1347,16 +1311,8 @@ export const s3Service = {
       return analytics;
 
     } catch (error: any) {
-      logSecurityEvent('BUCKET_SCAN_FAILED', { bucket, error: error.message });
+      logSecurityEvent('BUCKET_SCAN_FAILED', { bucket, error: errMsg(error) });
       throw error;
-    }
-  },
-
-  logActivity: async (entry: any): Promise<void> => {
-    try {
-      await invoke('log_activity_entry', { entry });
-    } catch (e) {
-      console.error('Failed to log activity:', e);
     }
   },
 
@@ -1373,7 +1329,7 @@ export const s3Service = {
       return success;
     } catch (error: any) {
       console.error('Failed to delete trash folder:', error);
-      throw new Error(`Failed to clean up trash: ${error.message}`);
+      throw new Error(`Failed to clean up trash: ${errMsg(error)}`);
     }
   },
 

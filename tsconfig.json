@@ -32,6 +32,7 @@
     "target",
     "src-tauri/target",
     "bucketstack-site",
+    "tests",
     "**/*.d.ts"
   ]
 }

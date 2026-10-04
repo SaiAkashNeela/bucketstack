@@ -6,6 +6,7 @@ use tauri::{
     generate_context,
     Emitter,
     Manager,
+    Runtime,
     tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState},
     menu::MenuBuilder,
     image::Image,
@@ -146,12 +147,14 @@ fn init_activity_db() -> Result<(), String> {
 
     // Create directory if it doesn't exist
     std::fs::create_dir_all(&app_data_dir)
-        .map_err(|e| format!("Failed to create app data directory: {}", e))?;
+        .map_err(|e| format!("Failed to create app data directory: {}", err_chain(&e)))?;
 
-    let db_path = app_data_dir.join("activity.db");
-    
-    let conn = Connection::open(&db_path)
-        .map_err(|e| format!("Failed to open database: {}", e))?;
+    init_activity_db_at(&app_data_dir.join("activity.db"))
+}
+
+fn init_activity_db_at(db_path: &Path) -> Result<(), String> {
+    let conn = Connection::open(db_path)
+        .map_err(|e| format!("Failed to open database: {}", err_chain(&e)))?;
 
     // Create table if it doesn't exist
     conn.execute(
@@ -171,7 +174,7 @@ fn init_activity_db() -> Result<(), String> {
             metadata TEXT
         )",
         [],
-    ).map_err(|e| format!("Failed to create table: {}", e))?;
+    ).map_err(|e| format!("Failed to create table: {}", err_chain(&e)))?;
 
     // Create indices
     let _ = conn.execute(
@@ -291,7 +294,7 @@ fn query_activity_log(
     let params_refs: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|b| b.as_ref()).collect();
     
     let mut stmt = conn.prepare(&query)
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+        .map_err(|e| format!("Failed to prepare query: {}", err_chain(&e)))?;
     
     let entries = stmt.query_map(params_refs.as_slice(), |row| {
         Ok(ActivityLogEntry {
@@ -309,9 +312,9 @@ fn query_activity_log(
             source: row.get(11)?,
         })
     })
-    .map_err(|e| format!("Failed to query: {}", e))?
+    .map_err(|e| format!("Failed to query: {}", err_chain(&e)))?
     .collect::<Result<Vec<_>, _>>()
-    .map_err(|e| format!("Failed to collect results: {}", e))?;
+    .map_err(|e| format!("Failed to collect results: {}", err_chain(&e)))?;
 
     Ok(entries)
 }
@@ -339,13 +342,20 @@ fn export_activity_log(
     match format.as_str() {
         "json" => {
             serde_json::to_string_pretty(&entries)
-                .map_err(|e| format!("Failed to serialize to JSON: {}", e))
+                .map_err(|e| format!("Failed to serialize to JSON: {}", err_chain(&e)))
         }
         "csv" => {
+            // RFC 4180: quote fields containing separators, quotes or newlines
+            fn csv_field(value: &str) -> String {
+                if value.contains(|c| c == ',' || c == '"' || c == '\n' || c == '\r') {
+                    format!("\"{}\"", value.replace('"', "\"\""))
+                } else {
+                    value.to_string()
+                }
+            }
             let mut csv = String::from("Timestamp,Connection ID,Provider,Bucket,Action,Path Before,Path After,Status,Error,File Size\n");
             for entry in entries {
-                csv.push_str(&format!(
-                    "{},{},{},{},{},{},{},{},{},{}\n",
+                let fields = [
                     entry.timestamp,
                     entry.connection_id,
                     entry.provider,
@@ -356,7 +366,9 @@ fn export_activity_log(
                     entry.status,
                     entry.error_message.unwrap_or_default(),
                     entry.file_size.map(|s| s.to_string()).unwrap_or_default(),
-                ));
+                ];
+                csv.push_str(&fields.iter().map(|f| csv_field(f)).collect::<Vec<_>>().join(","));
+                csv.push('\n');
             }
             Ok(csv)
         }
@@ -388,7 +400,7 @@ fn clear_activity_log(
     let params_refs: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|b| b.as_ref()).collect();
     
     conn.execute(&query, params_refs.as_slice())
-        .map_err(|e| format!("Failed to clear log: {}", e))?;
+        .map_err(|e| format!("Failed to clear log: {}", err_chain(&e)))?;
 
     Ok(true)
 }
@@ -431,6 +443,36 @@ fn log_activity_entry(
 }
 
 // ==================== End Activity Logger Module ====================
+
+/// Full, human readable error text: walks the `Error::source()` chain.
+/// The AWS SDK's `Display` for `SdkError` only prints e.g. "service error",
+/// hiding the S3 error code (NoSuchKey, BucketNotEmpty, SignatureDoesNotMatch...)
+/// that the frontend needs to show a useful message.
+fn err_chain(e: &dyn std::error::Error) -> String {
+    let mut out = e.to_string();
+    let mut source = e.source();
+    while let Some(inner) = source {
+        let text = inner.to_string();
+        if !out.contains(&text) {
+            out.push_str(": ");
+            out.push_str(&text);
+        }
+        source = inner.source();
+    }
+    out
+}
+
+/// `x-amz-copy-source` value. Per the S3 API it must be URL-encoded; an
+/// unencoded key containing `%`, `?`, `#`... fails or resolves to a different
+/// object. Path separators are kept so the value stays `bucket/key`.
+fn copy_source(bucket: &str, key: &str) -> String {
+    let encoded_key = key
+        .split('/')
+        .map(|segment| urlencoding::encode(segment).into_owned())
+        .collect::<Vec<_>>()
+        .join("/");
+    format!("{}/{}", bucket, encoded_key)
+}
 
 // Helper to create S3 client
 async fn create_s3_client(
@@ -509,7 +551,7 @@ async fn test_s3_connection(
         .max_keys(1)
         .send()
         .await
-        .map_err(|e| format!("Failed to access bucket: {}", e))?;
+        .map_err(|e| format!("Failed to access bucket: {}", err_chain(&e)))?;
 
     Ok(S3TestResponse {
         success: true,
@@ -553,52 +595,64 @@ async fn list_objects(
 
     let client = S3Client::from_conf(s3_config.build());
 
-    let result = client
-        .list_objects_v2()
-        .bucket(&bucket)
-        .prefix(&prefix)
-        .delimiter("/")
-        .send()
-        .await
-        .map_err(|e| {
+    let mut objects = Vec::new();
+    let mut continuation_token: Option<String> = None;
+
+    // Page through every result: S3 returns at most 1000 entries per call, and a
+    // truncated listing hides files from the UI and from folder delete/rename.
+    loop {
+        let mut req = client
+            .list_objects_v2()
+            .bucket(&bucket)
+            .prefix(&prefix)
+            .delimiter("/");
+        if let Some(token) = continuation_token.take() {
+            req = req.continuation_token(token);
+        }
+
+        let result = req.send().await.map_err(|e| {
             eprintln!("AWS S3 Error in list_objects: {:?}", e);
-            format!("Failed to list objects: {:?}", e)
+            format!("Failed to list objects: {}", err_chain(&e))
         })?;
 
-    let mut objects = Vec::new();
-
-    // Add common prefixes as folders
-    let prefixes = result.common_prefixes();
-    for prefix in prefixes {
-        if let Some(prefix_str) = prefix.prefix() {
-            objects.push(S3Object {
-                key: prefix_str.to_string(),
-                size: 0,
-                last_modified: "".to_string(),
-                is_folder: true,
-                storage_class: None,
-            });
-        }
-    }
-
-    // Add objects
-    let contents = result.contents();
-    for obj in contents {
-        if let Some(key) = obj.key() {
-            // Skip directory marker objects (keys ending with '/'); they are
-            // already represented as common prefixes above.
-            if key.ends_with('/') {
-                continue;
+        // Add common prefixes as folders
+        for prefix in result.common_prefixes() {
+            if let Some(prefix_str) = prefix.prefix() {
+                objects.push(S3Object {
+                    key: prefix_str.to_string(),
+                    size: 0,
+                    last_modified: "".to_string(),
+                    is_folder: true,
+                    storage_class: None,
+                });
             }
-            objects.push(S3Object {
-                key: key.to_string(),
-                size: obj.size().unwrap_or(0),
-                last_modified: obj.last_modified()
-                    .map(|d| d.to_string())
-                    .unwrap_or_else(|| "Unknown".to_string()),
-                is_folder: false,
-                storage_class: obj.storage_class().map(|s| s.as_str().to_string()),
-            });
+        }
+
+        // Add objects
+        for obj in result.contents() {
+            if let Some(key) = obj.key() {
+                // Skip directory marker objects (keys ending with '/'); they are
+                // already represented as common prefixes above.
+                if key.ends_with('/') {
+                    continue;
+                }
+                objects.push(S3Object {
+                    key: key.to_string(),
+                    size: obj.size().unwrap_or(0),
+                    last_modified: obj.last_modified()
+                        .map(|d| d.to_string())
+                        .unwrap_or_else(|| "Unknown".to_string()),
+                    is_folder: false,
+                    storage_class: obj.storage_class().map(|s| s.as_str().to_string()),
+                });
+            }
+        }
+
+        match result.next_continuation_token() {
+            Some(token) if result.is_truncated().unwrap_or(false) => {
+                continuation_token = Some(token.to_string());
+            }
+            _ => break,
         }
     }
 
@@ -606,7 +660,7 @@ async fn list_objects(
         success: true,
         objects,
         message: "Objects listed successfully".to_string(),
-        next_continuation_token: result.next_continuation_token().map(|s| s.to_string()),
+        next_continuation_token: None,
     })
 }
 
@@ -656,7 +710,7 @@ async fn list_objects_recursive(
         req = req.max_keys(max);
     }
 
-    let result = req.send().await.map_err(|e| format!("Failed to list objects recursively: {}", e))?;
+    let result = req.send().await.map_err(|e| format!("Failed to list objects recursively: {}", err_chain(&e)))?;
 
     let mut objects = Vec::new();
     let contents = result.contents();
@@ -682,30 +736,30 @@ async fn list_objects_recursive(
     })
 }
 #[command]
-fn show_main_window(window: tauri::Window) {
+fn show_main_window<R: Runtime>(window: tauri::Window<R>) {
     let _ = window.show();
     let _ = window.set_focus();
 }
 
 #[command]
-fn hide_main_window(window: tauri::Window) {
+fn hide_main_window<R: Runtime>(window: tauri::Window<R>) {
     let _ = window.hide();
 }
 
 #[command]
-fn quick_upload(window: tauri::Window) {
+fn quick_upload<R: Runtime>(window: tauri::Window<R>) {
     let _ = window.emit("quick-upload", ());
 }
 
 #[command]
-fn hide_tray(app: tauri::AppHandle) {
+fn hide_tray<R: Runtime>(app: tauri::AppHandle<R>) {
     if let Some(window) = app.get_webview_window("tray") {
         let _ = window.hide();
     }
 }
 
 #[command]
-fn quit_app(app: tauri::AppHandle) {
+fn quit_app<R: Runtime>(app: tauri::AppHandle<R>) {
     app.exit(0);
 }
 
@@ -766,7 +820,7 @@ async fn list_buckets(
         .list_buckets()
         .send()
         .await
-        .map_err(|e| format!("Failed to list buckets: {}", e))?;
+        .map_err(|e| format!("Failed to list buckets: {}", err_chain(&e)))?;
 
     let buckets: Vec<String> = result
         .buckets()
@@ -826,9 +880,9 @@ async fn get_signed_url(
         .presigned(PresigningConfig::builder()
             .expires_in(Duration::from_secs(duration))
             .build()
-            .map_err(|e| format!("Failed to build presigning config: {}", e))?)
+            .map_err(|e| format!("Failed to build presigning config: {}", err_chain(&e)))?)
         .await
-        .map_err(|e| format!("Failed to create presigned request: {}", e))?;
+        .map_err(|e| format!("Failed to create presigned request: {}", err_chain(&e)))?;
 
     Ok(presigned_request.uri().to_string())
 }
@@ -874,7 +928,7 @@ async fn delete_object(
         .key(&key)
         .send()
         .await
-        .map_err(|e| format!("Failed to delete object: {}", e))?;
+        .map_err(|e| format!("Failed to delete object: {}", err_chain(&e)))?;
 
     Ok(true)
 }
@@ -918,7 +972,7 @@ async fn create_bucket(
         .bucket(&bucket)
         .send()
         .await
-        .map_err(|e| format!("Failed to create bucket: {}", e))?;
+        .map_err(|e| format!("Failed to create bucket: {}", err_chain(&e)))?;
 
     Ok(true)
 }
@@ -962,7 +1016,7 @@ async fn delete_bucket(
         .bucket(&bucket)
         .send()
         .await
-        .map_err(|e| format!("Failed to delete bucket: {}", e))?;
+        .map_err(|e| format!("Failed to delete bucket: {}", err_chain(&e)))?;
 
     Ok(true)
 }
@@ -1018,7 +1072,7 @@ async fn create_folder(
         .body(aws_sdk_s3::primitives::ByteStream::from_static(b""))
         .send()
         .await
-        .map_err(|e| format!("Failed to create folder: {}", e))?;
+        .map_err(|e| format!("Failed to create folder: {}", err_chain(&e)))?;
 
     Ok(true)
 }
@@ -1061,7 +1115,7 @@ async fn rename_object(
     let client = S3Client::from_conf(s3_config.build());
     
     // Copy object to new key
-    let copy_source = format!("{}/{}", bucket, old_key);
+    let copy_source = copy_source(&bucket, &old_key);
     client
         .copy_object()
         .bucket(&bucket)
@@ -1069,7 +1123,7 @@ async fn rename_object(
         .key(&new_key)
         .send()
         .await
-        .map_err(|e| format!("Failed to copy object: {}", e))?;
+        .map_err(|e| format!("Failed to copy object: {}", err_chain(&e)))?;
     
     // Delete old object
     client
@@ -1078,7 +1132,7 @@ async fn rename_object(
         .key(&old_key)
         .send()
         .await
-        .map_err(|e| format!("Failed to delete old object: {}", e))?;
+        .map_err(|e| format!("Failed to delete old object: {}", err_chain(&e)))?;
 
     Ok(true)
 }
@@ -1136,7 +1190,7 @@ async fn upload_file(
         .content_type(&final_content_type)
         .send()
         .await
-        .map_err(|e| format!("Failed to upload file: {}", e))?;
+        .map_err(|e| format!("Failed to upload file: {}", err_chain(&e)))?;
 
     Ok(true)
 }
@@ -1185,14 +1239,14 @@ async fn get_file_content(
         .key(&key)
         .send()
         .await
-        .map_err(|e| format!("Failed to get object: {}", e))?;
+        .map_err(|e| format!("Failed to get object: {}", err_chain(&e)))?;
 
     let bytes = result.body.collect().await
-        .map_err(|e| format!("Failed to read body: {}", e))?
+        .map_err(|e| format!("Failed to read body: {}", err_chain(&e)))?
         .into_bytes();
 
     let content = String::from_utf8(bytes.to_vec())
-        .map_err(|e| format!("File content is not valid UTF-8: {}", e))?;
+        .map_err(|e| format!("File content is not valid UTF-8: {}", err_chain(&e)))?;
 
     Ok(content)
 }
@@ -1255,7 +1309,7 @@ async fn search_objects(
             req = req.continuation_token(token);
         }
 
-        let result = req.send().await.map_err(|e| format!("Failed to search objects: {}", e))?;
+        let result = req.send().await.map_err(|e| format!("Failed to search objects: {}", err_chain(&e)))?;
 
         if let Some(contents) = result.contents {
             for obj in contents {
@@ -1336,7 +1390,7 @@ async fn calculate_folder_size(
             req = req.continuation_token(token);
         }
 
-        let result = req.send().await.map_err(|e| format!("Failed to list objects: {}", e))?;
+        let result = req.send().await.map_err(|e| format!("Failed to list objects: {}", err_chain(&e)))?;
 
         if let Some(contents) = result.contents {
             for obj in contents {
@@ -1420,7 +1474,7 @@ async fn create_multipart_upload(
         .content_type(&final_content_type)
         .send()
         .await
-        .map_err(|e| format!("Failed to create multipart upload: {}", e))?;
+        .map_err(|e| format!("Failed to create multipart upload: {}", err_chain(&e)))?;
 
     Ok(result.upload_id.ok_or("No upload ID returned")?)
 }
@@ -1470,7 +1524,7 @@ async fn upload_part(
         .body(aws_sdk_s3::primitives::ByteStream::from(body))
         .send()
         .await
-        .map_err(|e| format!("Failed to upload part: {}", e))?;
+        .map_err(|e| format!("Failed to upload part: {}", err_chain(&e)))?;
 
     Ok(result.e_tag.ok_or("No ETag returned")?.to_string())
 }
@@ -1540,7 +1594,7 @@ async fn complete_multipart_upload(
         .multipart_upload(completed_upload)
         .send()
         .await
-        .map_err(|e| format!("Failed to complete multipart upload: {}", e))?;
+        .map_err(|e| format!("Failed to complete multipart upload: {}", err_chain(&e)))?;
 
     Ok(true)
 }
@@ -1586,15 +1640,15 @@ async fn abort_multipart_upload(
         .upload_id(&upload_id)
         .send()
         .await
-        .map_err(|e| format!("Failed to abort multipart upload: {}", e))?;
+        .map_err(|e| format!("Failed to abort multipart upload: {}", err_chain(&e)))?;
 
     Ok(true)
 }
 
 // Copy a single file/object (like aws s3 cp)
 #[command]
-async fn copy_object_file(
-    window: tauri::Window,
+async fn copy_object_file<R: Runtime>(
+    window: tauri::Window<R>,
     job_id: String,
     endpoint: String,
     region: String,
@@ -1651,7 +1705,7 @@ async fn copy_object_file(
     });
 
     // Copy single object
-    let copy_source = format!("{}/{}", source_bucket, source_key);
+    let copy_source = copy_source(&source_bucket, &source_key);
     client
         .copy_object()
         .bucket(&dest_bucket)
@@ -1659,7 +1713,7 @@ async fn copy_object_file(
         .key(&dest_key)
         .send()
         .await
-        .map_err(|e| format!("Failed to copy object: {}", e))?;
+        .map_err(|e| format!("Failed to copy object: {}", err_chain(&e)))?;
 
     let _ = window.emit("transfer-progress", TransferProgress {
         job_id: job_id.clone(),
@@ -1675,8 +1729,8 @@ async fn copy_object_file(
 
 // Copy a folder recursively (like aws s3 sync)
 #[command]
-async fn copy_objects_folder(
-    window: tauri::Window,
+async fn copy_objects_folder<R: Runtime>(
+    window: tauri::Window<R>,
     job_id: String,
     endpoint: String,
     region: String,
@@ -1724,7 +1778,7 @@ async fn copy_objects_folder(
         if let Some(token) = continuation_token {
             list_req = list_req.continuation_token(token);
         }
-        let result = list_req.send().await.map_err(|e| format!("Failed to list objects: {}", e))?;
+        let result = list_req.send().await.map_err(|e| format!("Failed to list objects: {}", err_chain(&e)))?;
         for obj in result.contents() {
             if obj.key().map(|k| !k.ends_with('/')).unwrap_or(false) {
                 total_bytes += obj.size().unwrap_or(0) as u64;
@@ -1764,7 +1818,7 @@ async fn copy_objects_folder(
         let result = list_req
             .send()
             .await
-            .map_err(|e| format!("Failed to list objects: {}", e))?;
+            .map_err(|e| format!("Failed to list objects: {}", err_chain(&e)))?;
 
         for obj in result.contents() {
             if let Some(key) = obj.key() {
@@ -1776,7 +1830,7 @@ async fn copy_objects_folder(
                 let dest_key = format!("{}{}", dest_prefix, relative_key);
                 let file_size = obj.size().unwrap_or(0) as u64;
 
-                let copy_source = format!("{}/{}", source_bucket, key_str);
+                let copy_source = copy_source(&source_bucket, &key_str);
                 client
                     .copy_object()
                     .bucket(&dest_bucket)
@@ -1784,7 +1838,7 @@ async fn copy_objects_folder(
                     .key(&dest_key)
                     .send()
                     .await
-                    .map_err(|e| format!("Failed to copy object {}: {}", key_str, e))?;
+                    .map_err(|e| format!("Failed to copy object {}: {}", key_str, err_chain(&e)))?;
 
                 bytes_transferred += file_size;
                 let elapsed = start_time.elapsed().as_secs_f64();
@@ -1820,8 +1874,8 @@ async fn copy_objects_folder(
 }
 
 #[command]
-async fn stream_transfer_object(
-    window: tauri::Window,
+async fn stream_transfer_object<R: Runtime>(
+    window: tauri::Window<R>,
     job_id: String,
     s_endpoint: String,
     s_region: String,
@@ -1855,11 +1909,11 @@ async fn stream_transfer_object(
     let d_client = S3Client::from_conf(d_builder.build());
 
     let head = s_client.head_object().bucket(&s_bucket).key(&s_key).send().await
-        .map_err(|e| format!("Failed to get source metadata: {}", e))?;
+        .map_err(|e| format!("Failed to get source metadata: {}", err_chain(&e)))?;
     let total_size = head.content_length().unwrap_or(0);
 
     let source_resp = s_client.get_object().bucket(&s_bucket).key(&s_key).send().await
-        .map_err(|e| format!("Failed to start source stream: {}", e))?;
+        .map_err(|e| format!("Failed to start source stream: {}", err_chain(&e)))?;
     
     let mut body_stream = source_resp.body;
     let start_time = Instant::now();
@@ -1871,59 +1925,80 @@ async fn stream_transfer_object(
 
     if total_size > 5 * 1024 * 1024 {
         let multipart = d_client.create_multipart_upload().bucket(&d_bucket).key(&d_key).content_type(&transfer_content_type).send().await
-            .map_err(|e| format!("Failed to create multipart: {}", e))?;
-        let upload_id = multipart.upload_id().unwrap_or_default();
-        
-        let mut part_number = 1;
-        let mut completed_parts = Vec::new();
-        let mut buffer = Vec::with_capacity(6 * 1024 * 1024);
+            .map_err(|e| format!("Failed to create multipart: {}", err_chain(&e)))?;
+        let upload_id = multipart
+            .upload_id()
+            .ok_or("Failed to create multipart: no upload ID returned")?
+            .to_string();
 
-        while let Some(chunk_res) = body_stream.next().await {
-            let chunk = chunk_res.map_err(|e| format!("Stream error: {}", e))?;
-            buffer.extend_from_slice(&chunk);
-            transferred += chunk.len() as u64;
+        let upload_result: Result<(), String> = async {
+            let mut part_number = 1;
+            let mut completed_parts = Vec::new();
+            let mut buffer = Vec::with_capacity(6 * 1024 * 1024);
 
-            let elapsed = start_time.elapsed().as_secs_f64();
-            let speed = if elapsed > 0.0 { transferred as f64 / elapsed } else { 0.0 };
-            let _ = window.emit("transfer-progress", TransferProgress {
-                job_id: job_id.clone(),
-                bytes_transferred: transferred,
-                total_bytes: total_size as u64,
-                speed,
-                status: "active".to_string(),
-                error: None,
-            });
+            while let Some(chunk_res) = body_stream.next().await {
+                let chunk = chunk_res.map_err(|e| format!("Stream error: {}", err_chain(&e)))?;
+                buffer.extend_from_slice(&chunk);
+                transferred += chunk.len() as u64;
 
-            if buffer.len() >= 5 * 1024 * 1024 {
+                let elapsed = start_time.elapsed().as_secs_f64();
+                let speed = if elapsed > 0.0 { transferred as f64 / elapsed } else { 0.0 };
+                let _ = window.emit("transfer-progress", TransferProgress {
+                    job_id: job_id.clone(),
+                    bytes_transferred: transferred,
+                    total_bytes: total_size as u64,
+                    speed,
+                    status: "active".to_string(),
+                    error: None,
+                });
+
+                if buffer.len() >= 5 * 1024 * 1024 {
+                    let part_resp = d_client.upload_part()
+                        .bucket(&d_bucket).key(&d_key).upload_id(&upload_id).part_number(part_number)
+                        .body(std::mem::take(&mut buffer).into()).send().await
+                        .map_err(|e| format!("Part {} failed: {}", part_number, err_chain(&e)))?;
+
+                    completed_parts.push(aws_sdk_s3::types::CompletedPart::builder()
+                        .e_tag(part_resp.e_tag().unwrap_or_default()).part_number(part_number).build());
+
+                    part_number += 1;
+                }
+            }
+
+            if !buffer.is_empty() {
                 let part_resp = d_client.upload_part()
-                    .bucket(&d_bucket).key(&d_key).upload_id(upload_id).part_number(part_number)
-                    .body(buffer.clone().into()).send().await
-                    .map_err(|e| format!("Part {} failed: {}", part_number, e))?;
-                
+                    .bucket(&d_bucket).key(&d_key).upload_id(&upload_id).part_number(part_number)
+                    .body(buffer.into()).send().await
+                    .map_err(|e| format!("Last part failed: {}", err_chain(&e)))?;
                 completed_parts.push(aws_sdk_s3::types::CompletedPart::builder()
                     .e_tag(part_resp.e_tag().unwrap_or_default()).part_number(part_number).build());
-                
-                part_number += 1;
-                buffer.clear();
             }
+
+            let completed_upload = aws_sdk_s3::types::CompletedMultipartUpload::builder().set_parts(Some(completed_parts)).build();
+            d_client.complete_multipart_upload().bucket(&d_bucket).key(&d_key).upload_id(&upload_id).multipart_upload(completed_upload).send().await
+                .map_err(|e| format!("Complete multipart failed: {}", err_chain(&e)))?;
+            Ok(())
+        }
+        .await;
+
+        if let Err(e) = upload_result {
+            // Don't leave an orphaned (billable) multipart upload behind
+            let _ = d_client.abort_multipart_upload().bucket(&d_bucket).key(&d_key).upload_id(&upload_id).send().await;
+            return Err(e);
         }
 
-        if !buffer.is_empty() {
-            let part_resp = d_client.upload_part()
-                .bucket(&d_bucket).key(&d_key).upload_id(upload_id).part_number(part_number)
-                .body(buffer.into()).send().await
-                .map_err(|e| format!("Last part failed: {}", e))?;
-            completed_parts.push(aws_sdk_s3::types::CompletedPart::builder()
-                .e_tag(part_resp.e_tag().unwrap_or_default()).part_number(part_number).build());
-        }
-
-        let completed_upload = aws_sdk_s3::types::CompletedMultipartUpload::builder().set_parts(Some(completed_parts)).build();
-        d_client.complete_multipart_upload().bucket(&d_bucket).key(&d_key).upload_id(upload_id).multipart_upload(completed_upload).send().await
-            .map_err(|e| format!("Complete multipart failed: {}", e))?;
+        let _ = window.emit("transfer-progress", TransferProgress {
+            job_id: job_id.clone(),
+            bytes_transferred: total_size as u64,
+            total_bytes: total_size as u64,
+            speed: total_size as f64 / start_time.elapsed().as_secs_f64().max(0.1),
+            status: "completed".to_string(),
+            error: None,
+        });
     } else {
-        let body_bytes = body_stream.collect().await.map_err(|e| format!("Collect error: {}", e))?;
+        let body_bytes = body_stream.collect().await.map_err(|e| format!("Collect error: {}", err_chain(&e)))?;
         d_client.put_object().bucket(&d_bucket).key(&d_key).content_type(&transfer_content_type).body(body_bytes.into_bytes().into()).send().await
-            .map_err(|e| format!("Put failed: {}", e))?;
+            .map_err(|e| format!("Put failed: {}", err_chain(&e)))?;
         
         let _ = window.emit("transfer-progress", TransferProgress {
             job_id: job_id.clone(),
@@ -1938,9 +2013,40 @@ async fn stream_transfer_object(
     Ok(true)
 }
 
-// Compress objects to zip or tar.gz
+/// Removes a temporary directory when dropped, so failed operations don't leak files.
+struct TempDirGuard(std::path::PathBuf);
+
+impl Drop for TempDirGuard {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
+
+/// Path of `object_key` inside an archive, relative to the parent of the
+/// selected item (`selected_key`). `..`/empty components are dropped so a
+/// crafted key can never escape the staging directory.
+fn archive_entry_path(selected_key: &str, object_key: &str) -> Option<String> {
+    let trimmed = selected_key.trim_end_matches('/');
+    let base = match trimmed.rfind('/') {
+        Some(idx) => &trimmed[..=idx],
+        None => "",
+    };
+    let relative = object_key.strip_prefix(base).unwrap_or(object_key);
+    let parts: Vec<&str> = relative
+        .split('/')
+        .filter(|p| !p.is_empty() && *p != "." && *p != "..")
+        .collect();
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join("/"))
+    }
+}
+
+// Compress objects (files and/or folders) into a zip or tar.gz stored next to them
 #[command]
 async fn compress_objects(
+    endpoint: String,
     bucket: String,
     keys: Vec<String>,
     prefix: String,
@@ -1950,127 +2056,159 @@ async fn compress_objects(
     region: String,
 ) -> Result<bool, String> {
     use std::io::Write;
-    use std::fs::File;
 
-    let access_key_id = access_key_id.trim();
-    let secret_access_key = secret_access_key.trim();
+    if keys.is_empty() {
+        return Err("No items selected to compress".to_string());
+    }
+    let is_tar = format == "tar.gz";
 
-    let credentials = aws_sdk_s3::config::Credentials::new(
-        access_key_id.to_string(),
-        secret_access_key.to_string(),
-        None,
-        None,
-        "BucketStack",
-    );
+    let client = create_s3_client(&endpoint, &region, &access_key_id, &secret_access_key).await;
 
-    let config = aws_config::defaults(BehaviorVersion::latest())
-        .region(aws_config::Region::new(region))
-        .credentials_provider(credentials)
-        .load()
-        .await;
-
-    let s3_config = aws_sdk_s3::config::Builder::from(&config).build();
-    let client = S3Client::from_conf(s3_config);
-
-    // Determine archive name and create temp directory
-    let archive_name = if format == "tar.gz" {
-        "archive.tar.gz"
-    } else {
-        "archive.zip"
-    };
-
-    let temp_dir = std::env::temp_dir().join("bucketstack_compress");
-    let _ = std::fs::create_dir_all(&temp_dir);
-
-    // Download objects to temp directory
+    // 1. Resolve every object to include (folders are expanded recursively)
+    let mut entries: Vec<(String, String)> = Vec::new(); // (object key, path inside archive)
+    let mut used_paths = std::collections::HashSet::new();
     for key in &keys {
-        let file_name = key.split('/').last().unwrap_or("file");
-        let local_path = temp_dir.join(file_name);
+        let mut object_keys = Vec::new();
+        if key.ends_with('/') {
+            let mut continuation_token: Option<String> = None;
+            loop {
+                let mut req = client.list_objects_v2().bucket(&bucket).prefix(key);
+                if let Some(token) = continuation_token.take() {
+                    req = req.continuation_token(token);
+                }
+                let result = req
+                    .send()
+                    .await
+                    .map_err(|e| format!("Failed to list {}: {}", key, err_chain(&e)))?;
+                for obj in result.contents() {
+                    if let Some(k) = obj.key() {
+                        if !k.ends_with('/') {
+                            object_keys.push(k.to_string());
+                        }
+                    }
+                }
+                match result.next_continuation_token() {
+                    Some(token) if result.is_truncated().unwrap_or(false) => {
+                        continuation_token = Some(token.to_string())
+                    }
+                    _ => break,
+                }
+            }
+        } else {
+            object_keys.push(key.clone());
+        }
 
-        let obj = client
-            .get_object()
-            .bucket(&bucket)
-            .key(key)
-            .send()
-            .await
-            .map_err(|e| format!("Failed to download {}: {}", key, e))?;
-
-        let body = obj.body.collect().await
-            .map_err(|e| format!("Failed to read body for {}: {}", key, e))?;
-
-        let mut file = File::create(&local_path)
-            .map_err(|e| format!("Failed to create file {}: {}", file_name, e))?;
-        file.write_all(&body.into_bytes())
-            .map_err(|e| format!("Failed to write file {}: {}", file_name, e))?;
+        for object_key in object_keys {
+            if let Some(mut entry_path) = archive_entry_path(key, &object_key) {
+                // Two selected items may share a name (e.g. from search results)
+                let original = entry_path.clone();
+                let mut n = 1;
+                while !used_paths.insert(entry_path.clone()) {
+                    entry_path = format!("{} ({})", original, n);
+                    n += 1;
+                }
+                entries.push((object_key, entry_path));
+            }
+        }
     }
 
-    // Create archive
-    let archive_path = temp_dir.join(archive_name);
+    if entries.is_empty() {
+        return Err("Nothing to compress: the selected folders are empty".to_string());
+    }
 
-    if format == "tar.gz" {
-        // Create tar.gz using system command
+    // 2. Download into a unique staging directory (cleaned up on any exit)
+    let unique = format!(
+        "bucketstack_compress_{}_{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0)
+    );
+    let work_dir = std::env::temp_dir().join(unique);
+    let _cleanup = TempDirGuard(work_dir.clone());
+    let staging = work_dir.join("staging");
+    fs::create_dir_all(&staging).map_err(|e| format!("Failed to create temp directory: {}", err_chain(&e)))?;
+
+    for (object_key, entry_path) in &entries {
+        let local_path = staging.join(entry_path);
+        if let Some(parent) = local_path.parent() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create temp directory: {}", err_chain(&e)))?;
+        }
+        let output = client
+            .get_object()
+            .bucket(&bucket)
+            .key(object_key)
+            .send()
+            .await
+            .map_err(|e| format!("Failed to download {}: {}", object_key, err_chain(&e)))?;
+        let mut file = fs::File::create(&local_path)
+            .map_err(|e| format!("Failed to create file {}: {}", entry_path, err_chain(&e)))?;
+        let mut body = output.body;
+        while let Some(chunk) = body.next().await {
+            let data = chunk.map_err(|e| format!("Failed to read {}: {}", object_key, err_chain(&e)))?;
+            file.write_all(&data)
+                .map_err(|e| format!("Failed to write file {}: {}", entry_path, err_chain(&e)))?;
+        }
+    }
+
+    // 3. Build the archive
+    let archive_path = work_dir.join(if is_tar { "archive.tar.gz" } else { "archive.zip" });
+    if is_tar {
+        let mut top_level: Vec<String> = entries
+            .iter()
+            .filter_map(|(_, p)| p.split('/').next().map(|s| s.to_string()))
+            .collect();
+        top_level.sort();
+        top_level.dedup();
         let output = std::process::Command::new("tar")
-            .args(&["-czf", archive_name, "-C", temp_dir.to_str().unwrap()])
-            .args(
-                keys.iter()
-                    .map(|k| k.split('/').last().unwrap_or("file"))
-                    .collect::<Vec<_>>()
-            )
-            .current_dir(&temp_dir)
+            .arg("-czf")
+            .arg(&archive_path)
+            .arg("-C")
+            .arg(&staging)
+            .args(&top_level)
             .output()
-            .map_err(|e| format!("Failed to create tar.gz: {}", e))?;
-
+            .map_err(|e| format!("Failed to run tar: {}", err_chain(&e)))?;
         if !output.status.success() {
             return Err(format!("tar command failed: {}", String::from_utf8_lossy(&output.stderr)));
         }
     } else {
-        // Create zip using zip crate
-        let file = File::create(&archive_path)
-            .map_err(|e| format!("Failed to create zip file: {}", e))?;
-
+        let file = fs::File::create(&archive_path)
+            .map_err(|e| format!("Failed to create zip file: {}", err_chain(&e)))?;
         let mut zip = zip::ZipWriter::new(file);
-
-        for key in &keys {
-            let file_name = key.split('/').last().unwrap_or("file");
-            let local_path = temp_dir.join(file_name);
-
-            let file_data = std::fs::read(&local_path)
-                .map_err(|e| format!("Failed to read file {}: {}", file_name, e))?;
-
-            zip.start_file(file_name, zip::write::FileOptions::default())
-                .map_err(|e| format!("Failed to add file to zip: {}", e))?;
-            zip.write_all(&file_data)
-                .map_err(|e| format!("Failed to write to zip: {}", e))?;
+        for (_, entry_path) in &entries {
+            let local_path = staging.join(entry_path);
+            let size = fs::metadata(&local_path).map(|m| m.len()).unwrap_or(0);
+            let options = zip::write::FileOptions::default().large_file(size >= u32::MAX as u64);
+            zip.start_file(entry_path.as_str(), options)
+                .map_err(|e| format!("Failed to add {} to zip: {}", entry_path, err_chain(&e)))?;
+            let mut source = fs::File::open(&local_path)
+                .map_err(|e| format!("Failed to read file {}: {}", entry_path, err_chain(&e)))?;
+            std::io::copy(&mut source, &mut zip)
+                .map_err(|e| format!("Failed to write {} to zip: {}", entry_path, err_chain(&e)))?;
         }
-
-        zip.finish()
-            .map_err(|e| format!("Failed to finalize zip: {}", e))?;
+        zip.finish().map_err(|e| format!("Failed to finalize zip: {}", err_chain(&e)))?;
     }
 
-    // Upload archive to S3
-    let archive_data = std::fs::read(&archive_path)
-        .map_err(|e| format!("Failed to read archive: {}", e))?;
-
-    let archive_key = format!("{}archive.{}", 
+    // 4. Upload next to the selected items
+    let archive_key = format!(
+        "{}archive.{}",
         if prefix.is_empty() { "".to_string() } else { format!("{}/", prefix.trim_end_matches('/')) },
-        if format == "tar.gz" { "tar.gz" } else { "zip" }
+        if is_tar { "tar.gz" } else { "zip" }
     );
-
+    let body = aws_sdk_s3::primitives::ByteStream::from_path(&archive_path)
+        .await
+        .map_err(|e| format!("Failed to read archive: {}", err_chain(&e)))?;
     client
         .put_object()
         .bucket(&bucket)
         .key(&archive_key)
-        .body(aws_sdk_s3::primitives::ByteStream::from(archive_data))
+        .content_type(if is_tar { "application/gzip" } else { "application/zip" })
+        .body(body)
         .send()
         .await
-        .map_err(|e| format!("Failed to upload archive: {}", e))?;
-
-    // Cleanup temp files
-    let _ = std::fs::remove_file(&archive_path);
-    for key in &keys {
-        let file_name = key.split('/').last().unwrap_or("file");
-        let _ = std::fs::remove_file(temp_dir.join(file_name));
-    }
+        .map_err(|e| format!("Failed to upload archive: {}", err_chain(&e)))?;
 
     Ok(true)
 }
@@ -2112,15 +2250,7 @@ async fn copy_object(
     }
     let client = S3Client::from_conf(s3_config.build());
 
-    // Source must be URL encoded if it contains special characters, but AWS SDK usually handles this if we pass raw key?
-    // The copy_source parameter expects "bucket/key". Key should be URI encoded.
-    // Rust URL encoding can be done with `urlencoding::encode`. 
-    // However, for MVP let's assume keys are simple or simple encoding. 
-    // Note: standard S3 `copy_source` format is `bucket/key`.
-    
-    // Simple encoding of the key part
-    let encoded_source_key = urlencoding::encode(&source_key);
-    let copy_source = format!("{}/{}", bucket, encoded_source_key);
+    let copy_source = copy_source(&bucket, &source_key);
     
     let mut req = client
         .copy_object()
@@ -2129,15 +2259,30 @@ async fn copy_object(
         .key(&dest_key);
 
     if let Some(meta) = metadata {
-       req = req.metadata_directive(aws_sdk_s3::types::MetadataDirective::Replace);
-       for (k, v) in meta {
-           req = req.metadata(k, v);
-       }
+        // REPLACE swaps *all* metadata, including Content-Type & co. Carry the
+        // source's standard headers over so files don't become octet-stream.
+        let head = client
+            .head_object()
+            .bucket(&bucket)
+            .key(&source_key)
+            .send()
+            .await
+            .map_err(|e| format!("Failed to read source metadata: {}", err_chain(&e)))?;
+        req = req
+            .metadata_directive(aws_sdk_s3::types::MetadataDirective::Replace)
+            .set_content_type(head.content_type().map(|s| s.to_string()))
+            .set_cache_control(head.cache_control().map(|s| s.to_string()))
+            .set_content_disposition(head.content_disposition().map(|s| s.to_string()))
+            .set_content_encoding(head.content_encoding().map(|s| s.to_string()))
+            .set_content_language(head.content_language().map(|s| s.to_string()));
+        for (k, v) in meta {
+            req = req.metadata(k, v);
+        }
     }
 
     req.send()
         .await
-        .map_err(|e| format!("Failed to copy object: {}", e))?;
+        .map_err(|e| format!("Failed to copy object: {}", err_chain(&e)))?;
 
     Ok(true)
 }
@@ -2181,7 +2326,7 @@ async fn head_object(
         .key(&key)
         .send()
         .await
-        .map_err(|e| format!("Failed to get object metadata: {}", e))?;
+        .map_err(|e| format!("Failed to get object metadata: {}", err_chain(&e)))?;
 
     let mut meta = HashMap::new();
     if let Some(m) = result.metadata {
@@ -2262,7 +2407,7 @@ async fn sync_folder(
         loop {
             let mut req = client.list_objects_v2().bucket(&bucket).prefix(&prefix);
             if let Some(token) = continuation_token { req = req.continuation_token(token); }
-            let resp = req.send().await.map_err(|e| e.to_string())?;
+            let resp = req.send().await.map_err(|e| err_chain(&e))?;
             
             if let Some(contents) = resp.contents {
                 for obj in contents {
@@ -2323,10 +2468,10 @@ async fn sync_folder(
                                          let content_type = mime_guess::from_path(&key).first_or_octet_stream().to_string();
                                          match client.put_object().bucket(&bucket).key(&key).content_type(content_type).body(stream).send().await {
                                              Ok(_) => Ok(size as u64),
-                                             Err(e) => Err(format!("Upload failed for {}: {}", key, e)),
+                                             Err(e) => Err(format!("Upload failed for {}: {}", key, err_chain(&e))),
                                          }
                                      },
-                                     Err(e) => Err(format!("File read failed {}: {}", key, e)),
+                                     Err(e) => Err(format!("File read failed {}: {}", key, err_chain(&e))),
                                  }
                              });
                          }
@@ -2359,7 +2504,7 @@ async fn sync_folder(
                     delete_tasks.push(async move {
                         match client.delete_object().bucket(&bucket).key(&key).send().await {
                             Ok(_) => Ok(()),
-                            Err(e) => Err(format!("Delete failed for {}: {}", key, e)),
+                            Err(e) => Err(format!("Delete failed for {}: {}", key, err_chain(&e))),
                         }
                     });
                 }
@@ -2410,7 +2555,7 @@ async fn sync_folder(
          loop {
             let mut req = client.list_objects_v2().bucket(&bucket).prefix(&prefix);
             if let Some(token) = continuation_token { req = req.continuation_token(token); }
-            let resp = req.send().await.map_err(|e| e.to_string())?;
+            let resp = req.send().await.map_err(|e| err_chain(&e))?;
             
             if let Some(contents) = resp.contents {
                 for obj in contents {
@@ -2433,7 +2578,7 @@ async fn sync_folder(
          loop {
             let mut req = client.list_objects_v2().bucket(&bucket).prefix(&prefix);
             if let Some(token) = continuation_token { req = req.continuation_token(token); }
-            let resp = req.send().await.map_err(|e| e.to_string())?;
+            let resp = req.send().await.map_err(|e| err_chain(&e))?;
             
             if let Some(contents) = resp.contents {
                 for obj in contents {
@@ -2468,13 +2613,13 @@ async fn sync_folder(
                                                 Ok(bytes) => {
                                                      match fs::write(&dest_path, bytes.into_bytes()) {
                                                          Ok(_) => Ok(size as u64),
-                                                         Err(e) => Err(format!("Write failed {}: {}", key_str, e))
+                                                         Err(e) => Err(format!("Write failed {}: {}", key_str, err_chain(&e)))
                                                      }
                                                 },
-                                                Err(e) => Err(format!("Stream failed {}: {}", key_str, e))
+                                                Err(e) => Err(format!("Stream failed {}: {}", key_str, err_chain(&e)))
                                             }
                                         },
-                                        Err(e) => Err(format!("Get failed {}: {}", key_str, e))
+                                        Err(e) => Err(format!("Get failed {}: {}", key_str, err_chain(&e)))
                                     }
                                 });
                             }
@@ -2513,8 +2658,8 @@ async fn sync_folder(
 }
 
 #[command]
-async fn upload_paths(
-    window: tauri::Window,
+async fn upload_paths<R: Runtime>(
+    window: tauri::Window<R>,
     account_id: String,
     provider: String,
     endpoint: String,
@@ -2572,8 +2717,8 @@ async fn upload_paths(
     Ok(())
 }
 
-async fn upload_single_file_task(
-    window: &tauri::Window,
+async fn upload_single_file_task<R: Runtime>(
+    window: &tauri::Window<R>,
     client: &aws_sdk_s3::Client,
     account_id: &str,
     provider: &str,
@@ -2582,7 +2727,7 @@ async fn upload_single_file_task(
     path: &Path,
     enable_activity_log: bool,
 ) -> Result<(), String> {
-    let body = fs::read(path).map_err(|e| format!("Failed to read file {}: {}", path.display(), e))?;
+    let body = fs::read(path).map_err(|e| format!("Failed to read file {}: {}", path.display(), err_chain(&e)))?;
     let size = body.len() as u64;
 
     // Emit starting event
@@ -2633,7 +2778,7 @@ async fn upload_single_file_task(
             Ok(())
         }
         Err(e) => {
-            let error_msg = format!("Failed to upload {}: {}", key, e);
+            let error_msg = format!("Failed to upload {}: {}", key, err_chain(&e));
             
             // Emit error event
             let _ = window.emit("upload-progress", serde_json::json!({
@@ -2652,7 +2797,7 @@ async fn upload_single_file_task(
                 None,
                 Some(key.to_string()),
                 "failed".to_string(),
-                Some(e.to_string()),
+                Some(err_chain(&e)),
                 Some(size as i64),
                 enable_activity_log,
             );
@@ -2679,22 +2824,22 @@ async fn download_file_to_path(
         .key(&key)
         .send()
         .await
-        .map_err(|e| format!("Failed to get object from S3: {}", e))?;
+        .map_err(|e| format!("Failed to get object from S3: {}", err_chain(&e)))?;
 
     let mut body = output.body;
-    let mut file = fs::File::create(&path).map_err(|e| format!("Failed to create local file: {}", e))?;
+    let mut file = fs::File::create(&path).map_err(|e| format!("Failed to create local file: {}", err_chain(&e)))?;
 
     while let Some(chunk) = body.next().await {
-        let data = chunk.map_err(|e| format!("Error while streaming from S3: {}", e))?;
+        let data = chunk.map_err(|e| format!("Error while streaming from S3: {}", err_chain(&e)))?;
         use std::io::Write;
-        file.write_all(&data).map_err(|e| format!("Failed to write to local file: {}", e))?;
+        file.write_all(&data).map_err(|e| format!("Failed to write to local file: {}", err_chain(&e)))?;
     }
 
     Ok(())
 }
 
 #[command]
-async fn reset_application(_app: tauri::AppHandle) -> Result<bool, String> {
+async fn reset_application<R: Runtime>(_app: tauri::AppHandle<R>) -> Result<bool, String> {
     println!("Starting full application reset...");
 
     // 1. Close and delete the activity database
@@ -2766,7 +2911,7 @@ async fn delete_trash_folder(
         }
 
         let response = list_req.send().await
-            .map_err(|e| format!("Failed to list trash objects: {}", e))?;
+            .map_err(|e| format!("Failed to list trash objects: {}", err_chain(&e)))?;
 
         // Delete all objects in this batch
         let contents = response.contents();
@@ -2777,7 +2922,7 @@ async fn delete_trash_folder(
                     .key(key)
                     .send()
                     .await
-                    .map_err(|e| format!("Failed to delete trash object {}: {}", key, e))?;
+                    .map_err(|e| format!("Failed to delete trash object {}: {}", key, err_chain(&e)))?;
                 deleted_count += 1;
             }
         }
@@ -2795,17 +2940,15 @@ async fn delete_trash_folder(
     Ok(true)
 }
 
-fn main() {
-    // Initialize security manager
-    security::init_security_manager();
+// Embedded app context (config, assets, capabilities). Generated once per binary.
+fn app_context<R: Runtime>() -> tauri::Context<R> {
+    generate_context!()
+}
 
-    tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_clipboard_manager::init())
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_positioner::init())
-        .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![
+// Single source of truth for the IPC command list (shared by main() and the IPC tests)
+macro_rules! app_commands {
+    () => {
+        tauri::generate_handler![
             // Secure Storage Commands
             save_secure_item,
             get_secure_item,
@@ -2849,7 +2992,21 @@ fn main() {
             upload_paths,
             reset_application,
             delete_trash_folder
-        ])
+        ]
+    };
+}
+
+fn main() {
+    // Initialize security manager
+    security::init_security_manager();
+
+    tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_positioner::init())
+        .plugin(tauri_plugin_process::init())
+        .invoke_handler(app_commands!())
         .setup(|app| {
             // Initialize activity log database
             if let Err(e) = init_activity_db() {
@@ -2974,7 +3131,7 @@ fn main() {
                 }
             }
         })
-        .build(generate_context!())
+        .build(app_context())
         .expect("error while running tauri application")
         .run(|app, event| match event {
             tauri::RunEvent::ExitRequested { api, .. } => {
@@ -3000,3 +3157,33 @@ fn main() {
             _ => {}
         });
 }
+
+#[cfg(test)]
+mod unit_tests {
+    use super::*;
+
+    #[test]
+    fn archive_entry_path_is_relative_to_selection_parent() {
+        assert_eq!(archive_entry_path("z/one.txt", "z/one.txt").as_deref(), Some("one.txt"));
+        assert_eq!(archive_entry_path("z/folder/", "z/folder/deep/x.txt").as_deref(), Some("folder/deep/x.txt"));
+        assert_eq!(archive_entry_path("hello.txt", "hello.txt").as_deref(), Some("hello.txt"));
+        assert_eq!(archive_entry_path("top/", "top/a.txt").as_deref(), Some("top/a.txt"));
+    }
+
+    #[test]
+    fn archive_entry_path_strips_traversal() {
+        assert_eq!(archive_entry_path("z/evil/", "z/evil/../../escape.txt").as_deref(), Some("evil/escape.txt"));
+        assert_eq!(archive_entry_path("../../x", "../../x").as_deref(), Some("x"));
+        assert_eq!(archive_entry_path("a/", "a/").as_deref(), Some("a"));
+    }
+
+    #[test]
+    fn copy_source_encodes_key_but_keeps_slashes() {
+        assert_eq!(copy_source("b", "dir/my file+v1 (1)%20?#.txt"), "b/dir/my%20file%2Bv1%20%281%29%2520%3F%23.txt");
+        assert_eq!(copy_source("b", "ü/x"), "b/%C3%BC/x");
+    }
+}
+
+// IPC integration tests (declared after app_commands! so the macro is in scope)
+#[cfg(test)]
+mod ipc_tests;
