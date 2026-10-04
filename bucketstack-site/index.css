@@ -1,1 +1,78 @@
 @import "tailwindcss";
+@import "@fontsource-variable/geist";
+
+/* One neutral family (zinc) + one accent (the BucketStack logo blue). Light theme only. */
+:root {
+  --paper: #fafafa;
+  --surface: #ffffff;
+  --surface-2: #f4f4f5;
+  --ink: #18181b;
+  --ink-soft: #3f3f46;
+  --muted: #63636b;
+  --line: #e4e4e7;
+  --accent: #1d6ae5;
+  --accent-soft: #eaf1fd;
+  --inverse: #18181b;     /* dark panels on the light page */
+  --on-inverse: #ffffff;
+  --btn: #18181b;         /* primary button */
+  --btn-hover: #3f3f46;
+  --on-btn: #ffffff;
+  color-scheme: light;
+}
+
+
+@theme inline {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-inverse: var(--inverse);
+  --color-on-inverse: var(--on-inverse);
+  --color-btn: var(--btn);
+  --color-btn-hover: var(--btn-hover);
+  --color-on-btn: var(--on-btn);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* The live app demos render with the system UI font, like the real desktop app. */
+.app-font {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Gentle reveal as sections scroll into view. Pure CSS scroll-driven animation:
+   content is always visible by default; supporting browsers fade it in, others just
+   show it. (No JS observer, so nothing can ever get stuck hidden.) */
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

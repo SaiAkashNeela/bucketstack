@@ -425,8 +425,17 @@ const InteractiveFileManager: React.FC = () => {
   const handleContextMenu = (e: React.MouseEvent, type: ContextMenuType, data?: DemoObject | DemoAccount) => {
     e.preventDefault();
     e.stopPropagation();
-    const x = e.clientX;
-    const y = e.clientY;
+    let x = e.clientX;
+    let y = e.clientY;
+    // When the demo is scaled to fit (tablet widths), the scaled wrapper becomes the
+    // containing block of this fixed-position menu: convert to its local coordinates.
+    const scaledRoot = (e.currentTarget as HTMLElement).closest('[data-fit-scaled]') as HTMLElement | null;
+    if (scaledRoot) {
+      const rect = scaledRoot.getBoundingClientRect();
+      const scale = rect.width / scaledRoot.offsetWidth || 1;
+      x = (e.clientX - rect.left) / scale;
+      y = (e.clientY - rect.top) / scale;
+    }
     if (type === 'item') {
       setContextMenu({ x, y, type, item: data as DemoObject });
     } else if (type === 'account') {

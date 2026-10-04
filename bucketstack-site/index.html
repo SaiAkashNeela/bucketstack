@@ -130,181 +130,87 @@
       --input-focus-ring: rgba(59, 130, 246, 0.2);
     }
 
-    .dark {
-      --bg-primary: #0f172a;
-      --bg-secondary: #1e293b;
-      --bg-tertiary: #334155;
-      --bg-subtle: #334155;
-      --bg-selected: #1e40af;
-
-      --border-primary: #334155;
-      --border-secondary: #475569;
-      --border-selected: #1d4ed8;
-
-      --text-primary: #f8fafc;
-      --text-secondary: #cbd5e1;
-      --text-tertiary: #94a3b8;
-      --text-on-accent: #ffffff;
-
-      --accent-blue: #60a5fa;
-      --accent-blue-hover: #3b82f6;
-
-      --icon-color: #94a3b8;
-      --icon-color-accent: #60a5fa;
-
-      --text-danger: #f87171;
-      --bg-danger-subtle: #450a0a;
-      --bg-danger-hover: #572424;
-
-      --text-success: #4ade80;
-      --bg-success-subtle: #166534;
-
-      --bg-warning-subtle: #422006;
-      --border-warning: #78350f;
-      --text-warning-heading: #fde047;
-      --text-warning-body: #facc15;
-
-      --input-bg: #1e293b;
-      --input-border: #475569;
-      --input-focus-ring: rgba(96, 165, 250, 0.2);
-    }
-
-    * {
-      font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
 
     body {
-      background: var(--bg-primary);
-      color: var(--text-primary);
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       margin: 0;
     }
 
-    /* Fallback SSR container for non-JS crawlers */
-    .ssr-fallback {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 40px 20px;
-      line-height: 1.6;
-    }
-
-    .ssr-fallback h1 {
-      font-size: 2.25rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-      color: #0f172a;
-    }
-
-    .ssr-fallback h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-top: 2rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .ssr-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
-      margin: 20px 0;
-    }
-
-    .ssr-card {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 20px;
-    }
-
-    .ssr-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      margin: 24px 0;
-    }
-
-    .ssr-links a {
-      color: #2563eb;
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .ssr-links a:hover {
-      text-decoration: underline;
-    }
   </style>
 </head>
 
 <body>
   <div id="root">
-    <!-- Server-Side & Semantic HTML Fallback for AI Agents & Search Crawlers without JS -->
-    <main class="ssr-fallback">
-      <header>
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-          <img src="/logo.png" alt="BucketStack Logo" width="48" height="48" />
-          <span style="font-size: 24px; font-weight: 800;">BucketStack</span>
+    <!-- Static HTML shown before the app loads (and to crawlers / AI agents without JS).
+         It mirrors the top of the React page (App.tsx) so there is no visible change when
+         the app takes over. Keep the copy in sync with App.tsx. -->
+    <div class="min-h-[100dvh] flex flex-col font-sans antialiased">
+      <header class="sticky top-0 z-40 bg-paper/85 backdrop-blur-md border-b border-line/70">
+        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <a href="/" class="flex items-center gap-2.5">
+            <img src="/logo.png" alt="" class="w-7 h-7" />
+            <span class="font-semibold tracking-tight text-[17px]">BucketStack</span>
+          </a>
+          <nav class="hidden md:flex items-center gap-8 text-[15px] text-ink-soft" aria-label="Main">
+            <a href="#features">Features</a>
+            <a href="#security">Privacy</a>
+            <a href="https://github.com/SaiAkashNeela/bucketstack">GitHub</a>
+            <a href="#download" class="inline-flex items-center h-9 px-4 rounded-lg bg-btn text-on-btn text-sm font-medium">Download</a>
+          </nav>
         </div>
-        <h1>Manage S3 Buckets Like a Pro — Native Desktop App</h1>
-        <p style="font-size: 1.125rem; color: #475569;">
-          BucketStack is a fast, secure, and open-source desktop workstation built with Rust and React for managing AWS S3, Cloudflare R2, MinIO, Wasabi, Backblaze B2, and custom S3 storage providers on macOS, Windows, and Linux.
-        </p>
       </header>
 
-      <nav class="ssr-links" aria-label="Quick links">
-        <a href="https://github.com/SaiAkashNeela/bucketstack/releases/latest">Download Latest Release</a>
-        <a href="/developers">Developer Portal & IPC API</a>
-        <a href="/about">About</a>
-        <a href="/contact">Contact</a>
-        <a href="/privacy">Privacy Policy</a>
-        <a href="/terms">Terms</a>
-        <a href="/llms.txt">llms.txt (LLM Summary)</a>
-        <a href="/llms-full.txt">llms-full.txt (Full Agent Context)</a>
-      </nav>
+      <main class="flex-1">
+        <section class="pt-14 pb-20 md:pt-20 md:pb-28">
+          <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-2xl mb-12">
+              <h1 class="text-[40px] leading-[1.05] sm:text-6xl sm:leading-[1.04] font-semibold tracking-[-0.035em] text-ink">
+                Your S3 buckets, as easy as a folder.
+              </h1>
+              <p class="mt-6 text-lg sm:text-xl leading-relaxed text-muted max-w-[34rem]">
+                Browse, upload, edit and share files on AWS S3, Cloudflare R2, MinIO and more. Free and open source.
+              </p>
+              <div class="mt-9 flex flex-wrap items-center gap-3">
+                <a href="https://github.com/SaiAkashNeela/bucketstack/releases/latest" class="inline-flex items-center justify-center h-12 px-6 rounded-xl bg-btn text-on-btn text-[15px] font-medium">Download for Mac</a>
+                <a href="https://github.com/SaiAkashNeela/bucketstack/releases/latest" class="inline-flex items-center justify-center h-12 px-5 rounded-xl bg-surface border border-line text-ink text-[15px] font-medium">Windows</a>
+                <a href="https://github.com/SaiAkashNeela/bucketstack/releases/latest" class="inline-flex items-center justify-center h-12 px-5 rounded-xl bg-surface border border-line text-ink text-[15px] font-medium">Linux</a>
+              </div>
+            </div>
+            <!-- Space reserved for the live demo so nothing jumps when it appears -->
+            <div class="h-[340px] md:h-[790px]" aria-hidden="true"></div>
+          </div>
+        </section>
 
-      <section>
-        <h2>Why Engineers Choose BucketStack</h2>
-        <div class="ssr-grid">
-          <div class="ssr-card">
-            <h3>🔒 Hardware-Bound Security</h3>
-            <p>Credentials never leave your machine. Stored using AES-256-GCM encryption linked directly to your macOS Keychain, Windows Credential Manager, or Linux Secret Service.</p>
-          </div>
-          <div class="ssr-card">
-            <h3>⚡ Blazing Rust Engine</h3>
-            <p>Under 80MB RAM footprint and instant startup backed by Tauri 2.0 and Rust with native multi-threaded multipart uploads.</p>
-          </div>
-          <div class="ssr-card">
-            <h3>🌐 Universal Multi-Provider S3</h3>
-            <p>Native first-class support for Amazon AWS S3, Cloudflare R2, MinIO, Wasabi, Backblaze B2, DigitalOcean Spaces, and custom SigV4 endpoints.</p>
-          </div>
-          <div class="ssr-card">
-            <h3>📝 Integrated Monaco Code Editor</h3>
-            <p>Inspect, modify, and save configuration files, JSON, YAML, and code directly inside S3 buckets with syntax highlighting for 50+ languages.</p>
-          </div>
-          <div class="ssr-card">
-            <h3>🔄 Cloud-to-Cloud Streaming</h3>
-            <p>Directly transfer or synchronize files between different cloud storage providers without intermediate disk staging.</p>
-          </div>
-          <div class="ssr-card">
-            <h3>📊 Local Audit Trail & Analytics</h3>
-            <p>SQLite-backed local activity database with searchable audit logs and visual storage distribution breakdown charts.</p>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <h2>Supported Desktop Platforms</h2>
-        <ul>
-          <li><strong>macOS:</strong> Universal Binary for Apple Silicon (M1/M2/M3/M4) & Intel (x86_64) DMG / App</li>
-          <li><strong>Windows:</strong> 64-bit NSIS Installer (.exe) & MSI Package</li>
-          <li><strong>Linux:</strong> Debian/Ubuntu (.deb), AppImage, and RedHat/Fedora (.rpm)</li>
-        </ul>
-      </section>
-
-      <footer style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #64748b;">
-        <p>© 2026 BucketStack. Free & Open Source under MIT License. Maintained by Sai Akash Neela.</p>
-      </footer>
-    </main>
+        <section class="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pb-24 text-ink-soft leading-relaxed">
+          <h2 class="text-2xl font-semibold text-ink">What BucketStack does</h2>
+          <p class="mt-3 max-w-3xl">BucketStack is a free, open-source desktop app for macOS, Windows and Linux. It works with AWS S3, Cloudflare R2, MinIO, Wasabi, Backblaze B2, DigitalOcean Spaces, Railway and any other S3-compatible service.</p>
+          <ul class="mt-4 list-disc pl-5 space-y-1 max-w-3xl">
+            <li>Edit JSON, YAML, Markdown, CSV and code files directly in your bucket.</li>
+            <li>Copy files between storage providers with live progress.</li>
+            <li>Restore deleted files from Trash, and share download links that expire.</li>
+            <li>Back up a folder on a schedule, review the activity history, zip files and see storage breakdowns.</li>
+            <li>Access keys stay on your computer, encrypted with AES-256-GCM. No account and no tracking.</li>
+          </ul>
+          <h2 class="mt-10 text-2xl font-semibold text-ink">Downloads</h2>
+          <ul class="mt-4 list-disc pl-5 space-y-1">
+            <li>macOS: Apple silicon and Intel (.dmg)</li>
+            <li>Windows: Windows 10 and 11, 64-bit (.exe and .msi)</li>
+            <li>Linux: AppImage, .deb and .rpm</li>
+          </ul>
+          <nav class="mt-10 flex flex-wrap gap-x-6 gap-y-2" aria-label="More">
+            <a href="https://github.com/SaiAkashNeela/bucketstack/releases/latest">Latest release</a>
+            <a href="/about">About</a>
+            <a href="/developers">Developers</a>
+            <a href="/contact">Contact</a>
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/terms">Terms</a>
+            <a href="/llms.txt">llms.txt</a>
+            <a href="/llms-full.txt">llms-full.txt</a>
+          </nav>
+        </section>
+      </main>
+    </div>
   </div>
   <script type="module" src="/index.tsx"></script>
 </body>

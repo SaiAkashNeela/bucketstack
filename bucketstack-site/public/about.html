@@ -64,13 +64,13 @@
   <section>
     <h2>Our Mission</h2>
     <p>BucketStack was created to solve a persistent frustration among developers, DevOps engineers, and cloud architects: managing object storage across multiple cloud providers shouldn't require clunky, sluggish legacy tools or navigating multiple disparate web consoles with bloated load times.</p>
-    <p>We built BucketStack from the ground up as a native desktop application powered by <strong>Rust and Tauri 2.0</strong>, paired with a modern React 19 interface. The result is a lightweight desktop app that starts in milliseconds, uses under 80MB of RAM, and handles complex multi-part transfers, live in-bucket code editing, and cross-cloud synchronization with native OS speed.</p>
+    <p>We built BucketStack from the ground up as a native desktop application powered by <strong>Rust and Tauri 2.0</strong>, paired with a modern React 19 interface. The result is a lightweight desktop app that handles complex multi-part transfers, live in-bucket code editing, transfers between cloud providers, and scheduled folder sync.</p>
   </section>
 
   <div class="card">
     <h3>Core Design Principles</h3>
     <ul>
-      <li><strong>Local-First Security:</strong> Your S3 access keys and secret tokens never touch third-party servers. All secrets are stored with hardware-bound AES-256-GCM encryption in your OS Keychain / Credential Manager.</li>
+      <li><strong>Local-First Security:</strong> Your S3 access keys and secret tokens never touch third-party servers. All secrets are stored on your computer with AES-256-GCM encryption, using a key tied to that machine.</li>
       <li><strong>Universal S3 Compatibility:</strong> Built on the open S3 API standard, supporting AWS S3, Cloudflare R2, MinIO, Wasabi, Backblaze B2, and custom self-hosted endpoints.</li>
       <li><strong>Developer Experience:</strong> Integrated Monaco code editor with syntax highlighting for 50+ programming languages, direct cloud-to-cloud streaming, on-the-fly zip/tar archive creation, and local SQLite audit logging.</li>
       <li><strong>Open Source & Free:</strong> Fully transparent, community-driven, and licensed under the MIT License.</li>

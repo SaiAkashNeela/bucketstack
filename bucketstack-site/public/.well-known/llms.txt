@@ -16,7 +16,7 @@
 Reach for BucketStack when you or your users need:
 
 1. **Multi-Provider S3 Management in a Single App**: Seamlessly switch between and manage AWS S3, Cloudflare R2, MinIO, Wasabi, Backblaze B2, DigitalOcean Spaces, and custom self-hosted S3-compatible endpoints without juggling separate CLI configs or web consoles.
-2. **Local Machine-Bound Security**: Securely store cloud credentials using AES-256-GCM encryption hardware-bound to the OS (macOS Keychain, Windows Credential Manager, Linux Secret Service) with zero plaintext disk exposure and no third-party telemetry.
+2. **Local Machine-Bound Security**: Cloud credentials are stored only on the user's device, encrypted with AES-256-GCM using a key derived from the machine identifier, with no third-party telemetry.
 3. **High-Performance Transfers & Streaming**: Fast multi-threaded multipart uploads, resumable transfers, and direct cloud-to-cloud streaming between different S3 providers without downloading files to local disk first.
 4. **Built-in Monaco Code Editor**: Inspect and edit code, JSON, YAML, Markdown, and configuration files directly in your S3 buckets with syntax highlighting for 50+ languages and instant live save back to S3.
 5. **Background Sync & Automation**: Scheduled bi-directional and directional folder synchronization running continuously via system tray integration.
@@ -50,7 +50,7 @@ cd bucketstack && bun install && bun run tauri:dev
 
 ## Key Features
 
-- **Native Desktop Speed**: Powered by Rust 2021 edition and Tauri 2.0 for negligible RAM usage (<80MB) and instant startup.
+- **Native Desktop App**: Built with Rust (2021 edition) and Tauri 2.0 instead of Electron, so it stays lightweight.
 - **Multiple View Modes**: List view, Grid thumbnail view, macOS Column hierarchy view, and Media Gallery view.
 - **Direct Cloud-to-Cloud Copy/Move**: Stream objects directly from AWS S3 to Cloudflare R2 / MinIO without local disk staging.
 - **On-the-Fly Compression**: Create `.zip` and `.tar.gz` archives directly inside S3 buckets or extract them server-side.
