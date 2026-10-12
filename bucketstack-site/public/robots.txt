@@ -49,4 +49,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://www.bucketstack.app/sitemap.xml
+Sitemap: https://bucketstack.app/sitemap.xml

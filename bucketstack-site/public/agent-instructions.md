@@ -49,9 +49,9 @@ When an AI agent assists a developer with BucketStack:
   ```
 
 ### B. Verification & Health Checks
-- **Website & Documentation**: https://www.bucketstack.app
-- **Developer Hub**: https://www.bucketstack.app/developers
-- **LLM Summary (`llms.txt`)**: https://www.bucketstack.app/llms.txt
-- **Full LLM Context (`llms-full.txt`)**: https://www.bucketstack.app/llms-full.txt
+- **Website & Documentation**: https://bucketstack.app
+- **Developer Hub**: https://bucketstack.app/developers
+- **LLM Summary (`llms.txt`)**: https://bucketstack.app/llms.txt
+- **Full LLM Context (`llms-full.txt`)**: https://bucketstack.app/llms-full.txt
 - **GitHub Repository**: https://github.com/SaiAkashNeela/bucketstack
 - **Latest Releases**: https://github.com/SaiAkashNeela/bucketstack/releases/latest

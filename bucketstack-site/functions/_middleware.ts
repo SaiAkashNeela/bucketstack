@@ -88,15 +88,15 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   if (!isKnownRoute && (!response.ok || response.status === 404)) {
     const notFoundBody = `# 404 Not Found — BucketStack
 
-The requested resource \`${pathname}\` does not exist on https://www.bucketstack.app.
+The requested resource \`${pathname}\` does not exist on https://bucketstack.app.
 
 ## Navigation Guidance for AI Agents & Crawlers:
-- **LLM Summary**: https://www.bucketstack.app/llms.txt
-- **Full Technical Context**: https://www.bucketstack.app/llms-full.txt
-- **Agent Instructions**: https://www.bucketstack.app/agent-instructions.txt
-- **Developer Portal**: https://www.bucketstack.app/developers
-- **XML Sitemap**: https://www.bucketstack.app/sitemap.xml
-- **Homepage**: https://www.bucketstack.app/
+- **LLM Summary**: https://bucketstack.app/llms.txt
+- **Full Technical Context**: https://bucketstack.app/llms-full.txt
+- **Agent Instructions**: https://bucketstack.app/agent-instructions.txt
+- **Developer Portal**: https://bucketstack.app/developers
+- **XML Sitemap**: https://bucketstack.app/sitemap.xml
+- **Homepage**: https://bucketstack.app/
 
 ---
 *BucketStack — Native Open Source S3 Desktop Workstation (Tauri 2.0 + Rust)*

@@ -3,11 +3,13 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" href="/icon-192.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BucketStack — Native S3 File Manager for macOS, Windows & Linux</title>
   <meta name="description"
-    content="BucketStack is a free, open-source native S3 desktop file manager built with Rust & React. Manage AWS S3, Cloudflare R2, MinIO, Wasabi, and Backblaze B2 with local hardware-encrypted security and built-in Monaco editor." />
+    content="BucketStack is a free, open-source native S3 desktop file manager built with Rust & React. Manage AWS S3, Cloudflare R2, MinIO, Wasabi, and Backblaze B2, with access keys encrypted on your computer and a built-in code editor." />
   <meta name="keywords"
     content="S3, file manager, AWS S3, Cloudflare R2, MinIO, Wasabi, Backblaze B2, cloud storage, Rust, Tauri, React, desktop app, macOS, Windows, Linux, bucket management, open source" />
   <meta name="author" content="BucketStack" />
@@ -15,23 +17,26 @@
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://www.bucketstack.app/" />
+  <meta property="og:url" content="https://bucketstack.app/" />
   <meta property="og:title" content="BucketStack — Native S3 File Manager" />
   <meta property="og:description"
     content="Manage your S3 buckets like a pro. Free, open-source desktop app for macOS, Windows & Linux." />
-  <meta property="og:image" content="https://www.bucketstack.app/logo.png" />
+  <meta property="og:image" content="https://bucketstack.app/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="BucketStack: your S3 buckets, as easy as a folder." />
   <meta property="og:site_name" content="BucketStack" />
 
   <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:url" content="https://www.bucketstack.app/" />
-  <meta property="twitter:title" content="BucketStack — Native S3 File Manager" />
-  <meta property="twitter:description"
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://bucketstack.app/" />
+  <meta name="twitter:title" content="BucketStack — Native S3 File Manager" />
+  <meta name="twitter:description"
     content="Manage your S3 buckets like a pro. Free, open-source desktop app for macOS, Windows & Linux." />
-  <meta property="twitter:image" content="https://www.bucketstack.app/logo.png" />
+  <meta name="twitter:image" content="https://bucketstack.app/og-image.png" />
 
   <!-- Canonical and Alternate Links for AI & LLMs -->
-  <link rel="canonical" href="https://www.bucketstack.app/" />
+  <link rel="canonical" href="https://bucketstack.app/" />
   <link rel="alternate" type="text/markdown" href="/llms.txt" title="BucketStack LLM Context" />
   <link rel="alternate" type="text/plain" href="/llms-full.txt" title="BucketStack Full LLM Documentation" />
 
@@ -42,10 +47,10 @@
       "@graph": [
         {
           "@type": "Organization",
-          "@id": "https://www.bucketstack.app/#organization",
+          "@id": "https://bucketstack.app/#organization",
           "name": "BucketStack",
-          "url": "https://www.bucketstack.app",
-          "logo": "https://www.bucketstack.app/logo.png",
+          "url": "https://bucketstack.app",
+          "logo": "https://bucketstack.app/logo.png",
           "description": "Open source native desktop S3 bucket management and multi-cloud storage developer tools.",
           "founder": {
             "@type": "Person",
@@ -64,9 +69,9 @@
         },
         {
           "@type": "SoftwareApplication",
-          "@id": "https://www.bucketstack.app/#application",
+          "@id": "https://bucketstack.app/#application",
           "name": "BucketStack",
-          "url": "https://www.bucketstack.app",
+          "url": "https://bucketstack.app",
           "description": "Free and open source native S3 desktop file manager built with Rust and React for macOS, Windows, and Linux. Features multi-provider S3 support, local AES-256-GCM encrypted credentials, Monaco code editor, cloud streaming, and background sync.",
           "applicationCategory": "DeveloperApplication",
           "operatingSystem": ["macOS", "Windows", "Linux"],
@@ -76,7 +81,7 @@
             "priceCurrency": "USD"
           },
           "author": {
-            "@id": "https://www.bucketstack.app/#organization"
+            "@id": "https://bucketstack.app/#organization"
           },
           "downloadUrl": "https://github.com/SaiAkashNeela/bucketstack/releases/latest",
           "softwareVersion": "1.0.6",

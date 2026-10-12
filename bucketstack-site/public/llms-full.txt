@@ -2,10 +2,10 @@
 
 > BucketStack is a free, open-source native desktop S3 bucket manager and developer workstation for macOS, Windows, and Linux. Built with Rust (Tauri 2.0), React 19, TypeScript, and Tailwind CSS.
 
-- **Website**: https://www.bucketstack.app
+- **Website**: https://bucketstack.app
 - **GitHub Repository**: https://github.com/SaiAkashNeela/bucketstack
-- **Developer Documentation**: https://www.bucketstack.app/developers
-- **Agent Instructions**: https://www.bucketstack.app/agent-instructions.txt
+- **Developer Documentation**: https://bucketstack.app/developers
+- **Agent Instructions**: https://bucketstack.app/agent-instructions.txt
 - **License**: MIT (Open Source)
 - **Supported Platforms**: macOS (Universal Apple Silicon & Intel DMG), Windows (x64 NSIS Setup & MSI), Linux (.deb, .AppImage, .rpm)
 
@@ -97,9 +97,9 @@ await invoke('clear_activity_log');
 ---
 
 ## 4. Trust Anchors & Navigation
-- **Website**: https://www.bucketstack.app
-- **Developer Hub**: https://www.bucketstack.app/developers
-- **Agent Instructions**: https://www.bucketstack.app/agent-instructions.txt
-- **About**: https://www.bucketstack.app/about
-- **Privacy Policy**: https://www.bucketstack.app/privacy
-- **Terms of Service**: https://www.bucketstack.app/terms
+- **Website**: https://bucketstack.app
+- **Developer Hub**: https://bucketstack.app/developers
+- **Agent Instructions**: https://bucketstack.app/agent-instructions.txt
+- **About**: https://bucketstack.app/about
+- **Privacy Policy**: https://bucketstack.app/privacy
+- **Terms of Service**: https://bucketstack.app/terms

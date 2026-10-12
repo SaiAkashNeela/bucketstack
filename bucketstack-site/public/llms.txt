@@ -2,10 +2,10 @@
 
 > BucketStack is a free, open-source native desktop S3 bucket manager and developer workstation for macOS, Windows, and Linux. Built with Rust (Tauri 2.0), React 19, TypeScript, and Tailwind CSS.
 
-- **Website**: https://www.bucketstack.app
+- **Website**: https://bucketstack.app
 - **GitHub Repository**: https://github.com/SaiAkashNeela/bucketstack
-- **Developer Documentation**: https://www.bucketstack.app/developers
-- **Agent Instructions**: https://www.bucketstack.app/agent-instructions.txt
+- **Developer Documentation**: https://bucketstack.app/developers
+- **Agent Instructions**: https://bucketstack.app/agent-instructions.txt
 - **License**: MIT (Open Source)
 - **Supported Platforms**: macOS (Apple Silicon & Intel), Windows (x64), Linux (.deb, .AppImage, .rpm)
 
@@ -75,9 +75,9 @@ cd bucketstack && bun install && bun run tauri:dev
 
 ## Developer & Agent Links
 
-- **Developer Portal**: https://www.bucketstack.app/developers
-- **Agent Instructions**: https://www.bucketstack.app/agent-instructions.txt
-- **Full Technical Context**: https://www.bucketstack.app/llms-full.txt
-- **About Page**: https://www.bucketstack.app/about
-- **Privacy Policy**: https://www.bucketstack.app/privacy
-- **Terms of Service**: https://www.bucketstack.app/terms
+- **Developer Portal**: https://bucketstack.app/developers
+- **Agent Instructions**: https://bucketstack.app/agent-instructions.txt
+- **Full Technical Context**: https://bucketstack.app/llms-full.txt
+- **About Page**: https://bucketstack.app/about
+- **Privacy Policy**: https://bucketstack.app/privacy
+- **Terms of Service**: https://bucketstack.app/terms
